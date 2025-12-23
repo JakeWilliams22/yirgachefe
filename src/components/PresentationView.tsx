@@ -36,6 +36,9 @@ export function PresentationView({
   const handleDownload = () => {
     if (!html) return;
 
+    // Track download event
+    window.umami?.track('presentation-downloaded');
+
     const blob = new Blob([html], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -49,6 +52,9 @@ export function PresentationView({
 
   const handleOpenInNewTab = () => {
     if (!html) return;
+
+    // Track share event
+    window.umami?.track('presentation-shared');
 
     const newWindow = window.open();
     if (newWindow) {

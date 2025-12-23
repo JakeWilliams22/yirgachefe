@@ -497,6 +497,9 @@ function App() {
       setHasResumableSession(false);
       setResumableInfo(null);
 
+      // Track process start
+      window.umami?.track('process-started', { directoryName: handle.name });
+
       await startExploration(handle);
     },
     [startExploration]
