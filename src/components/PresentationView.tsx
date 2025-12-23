@@ -12,12 +12,15 @@ interface PresentationViewProps {
   screenshot?: string | null;
   /** Callback to get the iframe container ref */
   onContainerReady?: (container: HTMLDivElement) => void;
+  /** Final HTML for download/viewing (only in results phase) */
+  html?: string | null;
 }
 
 export function PresentationView({
   isGenerating = false,
   screenshot = null,
   onContainerReady,
+  html = null,
 }: PresentationViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [showScreenshot, setShowScreenshot] = useState(false);
@@ -30,6 +33,30 @@ export function PresentationView({
     }
   }, [onContainerReady]);
 
+  const handleDownload = () => {
+    if (!html) return;
+
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `year-in-review-${new Date().toISOString().split('T')[0]}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleOpenInNewTab = () => {
+    if (!html) return;
+
+    const newWindow = window.open();
+    if (newWindow) {
+      newWindow.document.write(html);
+      newWindow.document.close();
+    }
+  };
+
   return (
     <div className="presentation-view">
       <div className="presentation-header">
@@ -40,14 +67,34 @@ export function PresentationView({
             <span>Agent is designing your presentation...</span>
           </div>
         )}
-        {!isGenerating && screenshot && (
+        {!isGenerating && (
           <div className="presentation-controls">
-            <button
-              className={`screenshot-toggle ${showScreenshot ? 'active' : ''}`}
-              onClick={() => setShowScreenshot(!showScreenshot)}
-            >
-              {showScreenshot ? 'Show Live' : 'Show Screenshot'}
-            </button>
+            {screenshot && (
+              <button
+                className={`screenshot-toggle ${showScreenshot ? 'active' : ''}`}
+                onClick={() => setShowScreenshot(!showScreenshot)}
+              >
+                {showScreenshot ? 'Show Live' : 'Show Screenshot'}
+              </button>
+            )}
+            {html && (
+              <>
+                <button
+                  className="action-button"
+                  onClick={handleOpenInNewTab}
+                  title="Open in new tab"
+                >
+                  🗗 Open in New Tab
+                </button>
+                <button
+                  className="action-button"
+                  onClick={handleDownload}
+                  title="Download HTML file"
+                >
+                  ⬇️ Download
+                </button>
+              </>
+            )}
           </div>
         )}
       </div>

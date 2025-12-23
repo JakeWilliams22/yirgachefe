@@ -47,6 +47,7 @@ export interface AgentConfig {
   systemPrompt: string;
   tools: Tool[];
   maxIterations?: number;
+  maxTokens?: number;
 }
 
 /**

@@ -632,6 +632,7 @@ function App() {
                 <PresentationView
                   isGenerating={false}
                   screenshot={screenshot}
+                  html={finalPresentationHtml}
                   onContainerReady={(container) => {
                     // Re-render final presentation with saved HTML
                     if (finalPresentationHtml) {

@@ -61,6 +61,32 @@
   border-color: #4a9eff;
 }
 
+.action-button {
+  padding: 8px 16px;
+  background: #4a9eff;
+  color: white;
+  border: 1px solid #4a9eff;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.action-button:hover {
+  background: #3a8eef;
+  border-color: #3a8eef;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(74, 158, 255, 0.3);
+}
+
+.action-button:active {
+  transform: translateY(0);
+}
+
 .presentation-container {
   flex: 1;
   position: relative;
