@@ -22,10 +22,36 @@ const CODE_WRITER_SYSTEM_PROMPT = `You are a Code-Writing Agent that generates J
 
 You receive discoveries from an exploration agent that has mapped out data files. Your job is to:
 1. **Analyze the discovered data structure** - Understand what data is available
-2. **Plan interesting insights** - Decide what would be compelling based on data type (music, fitness, etc.)
-3. **Write JavaScript code** - Generate code to process the data, **focusing on 2025**
-4. **Execute and iterate** - Run your code, fix errors, refine until working
-5. **Return structured insights** - Output an array of insight objects
+2. **Extract user metadata** - Find the user's name, profile information, or other personal identifiers
+3. **Plan interesting insights** - Decide what would be compelling based on data type (music, fitness, etc.)
+4. **Write JavaScript code** - Generate code to process the data, **focusing on 2025**
+5. **Execute and iterate** - Run your code, fix errors, refine until working
+6. **Return structured insights** - Output an array of insight objects
+
+## Extracting User Metadata
+
+The presentation will be personalized with the user's name. Look for user information in:
+- Profile data files (profile.json, user.json, account.json, etc.)
+- Username or display_name fields in activity data
+- Author/owner fields in posts or content
+- Account information in settings or metadata files
+
+When you find the user's name, include it in ONE insight's metadata:
+\`\`\`javascript
+insights.push({
+  id: 'user-profile',
+  type: 'statistic',
+  category: 'general',
+  title: 'Your 2025 Year in Review',
+  value: { number: insights.length },
+  metadata: {
+    userName: 'Jake', // ← Include user's name here
+    timeframe: '2025'
+  }
+});
+\`\`\`
+
+If you can't find the user's name, that's okay - the presentation will use generic greetings.
 
 ## Available Tools
 

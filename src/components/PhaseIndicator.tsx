@@ -5,7 +5,7 @@
 import './PhaseIndicator.css';
 
 interface PhaseIndicatorProps {
-  currentPhase: 'exploring' | 'writing-code' | 'results';
+  currentPhase: 'exploring' | 'writing-code' | 'presenting' | 'results';
 }
 
 interface Phase {
@@ -17,6 +17,7 @@ interface Phase {
 const phases: Phase[] = [
   { id: 'exploring', label: 'Exploring Data', icon: '🔍' },
   { id: 'writing-code', label: 'Generating Insights', icon: '⚡' },
+  { id: 'presenting', label: 'Creating Presentation', icon: '🎨' },
   { id: 'results', label: 'Complete', icon: '✨' },
 ];
 

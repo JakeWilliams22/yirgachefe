@@ -10,6 +10,7 @@ import {
   extractTextContent,
   extractToolUses,
   createToolResult,
+  createToolResultWithImage,
   type ContentBlock,
   type Message,
 } from '../services/anthropic';
@@ -230,6 +231,7 @@ export class AgentRunner {
           const response = await this.client.chat({
             system: this.config.systemPrompt,
             messages: state.messages,
+            maxTokens: this.config.maxTokens || 0,
             tools: toolDefinitions,
           });
 
@@ -322,9 +324,30 @@ export class AgentRunner {
                 // Check for discoveries in the result
                 this.extractDiscoveries(toolUse.name, toolUse.input, result, state);
 
-                toolResults.push(
-                  createToolResult(toolUse.id, result.output, !result.success)
-                );
+                // Check if result includes an image (for vision analysis)
+                const resultData = result.data as Record<string, unknown> | null;
+                const includesImage =
+                  resultData &&
+                  typeof resultData === 'object' &&
+                  'includeImage' in resultData &&
+                  resultData.includeImage === true &&
+                  'dataUrl' in resultData &&
+                  typeof resultData.dataUrl === 'string';
+
+                if (includesImage && resultData) {
+                  toolResults.push(
+                    createToolResultWithImage(
+                      toolUse.id,
+                      result.output,
+                      resultData.dataUrl as string,
+                      !result.success
+                    )
+                  );
+                } else {
+                  toolResults.push(
+                    createToolResult(toolUse.id, result.output, !result.success)
+                  );
+                }
               } catch (error) {
                 const errorMessage = `Tool execution error: ${(error as Error).message}`;
                 this.emit({ type: 'error', error: errorMessage });

@@ -180,3 +180,42 @@ export function clearAllState(): void {
 export function generateSessionId(): string {
   return `session_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 }
+
+// --- Code Writer Result (for quick presentation testing) ---
+
+const CODE_WRITER_RESULT_KEY = `${STORAGE_PREFIX}code_writer_result`;
+
+/**
+ * Save code writer result for testing presentations without re-running analysis
+ */
+export function saveCodeWriterResult(result: any): void {
+  try {
+    localStorage.setItem(CODE_WRITER_RESULT_KEY, JSON.stringify(result));
+  } catch (error) {
+    console.error('Failed to save code writer result:', error);
+  }
+}
+
+/**
+ * Load saved code writer result
+ */
+export function loadCodeWriterResult(): any | null {
+  try {
+    const data = localStorage.getItem(CODE_WRITER_RESULT_KEY);
+    return data ? JSON.parse(data) : null;
+  } catch (error) {
+    console.error('Failed to load code writer result:', error);
+    return null;
+  }
+}
+
+/**
+ * Clear saved code writer result
+ */
+export function clearCodeWriterResult(): void {
+  try {
+    localStorage.removeItem(CODE_WRITER_RESULT_KEY);
+  } catch (e) {
+    console.warn('Failed to clear code writer result:', e);
+  }
+}

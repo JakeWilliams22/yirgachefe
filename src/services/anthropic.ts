@@ -16,15 +16,22 @@ export interface Message {
   content: string | ContentBlock[];
 }
 
+export interface ImageSource {
+  type: 'base64';
+  media_type: 'image/png' | 'image/jpeg' | 'image/gif' | 'image/webp';
+  data: string;
+}
+
 export interface ContentBlock {
-  type: 'text' | 'tool_use' | 'tool_result';
+  type: 'text' | 'tool_use' | 'tool_result' | 'image';
   text?: string;
   id?: string;
   name?: string;
   input?: unknown;
   tool_use_id?: string;
-  content?: string;
+  content?: string | ContentBlock[];
   is_error?: boolean;
+  source?: ImageSource;
 }
 
 export interface ToolDefinition {
@@ -458,6 +465,45 @@ export function createToolResult(
     type: 'tool_result',
     tool_use_id: toolUseId,
     content: result,
+    is_error: isError,
+  };
+}
+
+/**
+ * Create tool result with image for vision analysis.
+ */
+export function createToolResultWithImage(
+  toolUseId: string,
+  text: string,
+  imageDataUrl: string,
+  isError: boolean = false
+): ContentBlock {
+  // Extract base64 data and media type from data URL
+  const match = imageDataUrl.match(/^data:(image\/\w+);base64,(.+)$/);
+  if (!match) {
+    throw new Error('Invalid image data URL format');
+  }
+
+  const mediaType = match[1] as 'image/png' | 'image/jpeg' | 'image/gif' | 'image/webp';
+  const base64Data = match[2];
+
+  return {
+    type: 'tool_result',
+    tool_use_id: toolUseId,
+    content: [
+      {
+        type: 'text',
+        text,
+      },
+      {
+        type: 'image',
+        source: {
+          type: 'base64',
+          media_type: mediaType,
+          data: base64Data,
+        },
+      },
+    ],
     is_error: isError,
   };
 }

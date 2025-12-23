@@ -18,7 +18,7 @@ export class Logger {
   /**
    * Log an agent event
    */
-  logEvent(phase: 'exploration' | 'code-writing', event: AgentEvent): void {
+  logEvent(phase: 'exploration' | 'code-writing' | 'presentation', event: AgentEvent): void {
     const timestamp = new Date().toISOString();
     const lines: string[] = [];
 
@@ -85,7 +85,7 @@ export class Logger {
   /**
    * Log a custom message
    */
-  log(phase: 'exploration' | 'code-writing' | 'system', message: string): void {
+  log(phase: 'exploration' | 'code-writing' | 'presentation' | 'system', message: string): void {
     const timestamp = new Date().toISOString();
     this.logEntries.push(`[${timestamp}] [${phase.toUpperCase()}] ${message}\n`);
     this.scheduleFlush();
