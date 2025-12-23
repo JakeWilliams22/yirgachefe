@@ -10,6 +10,7 @@ import type { IterationCheckpoint } from '../services/persistence';
 import { InsightsView } from './InsightsView';
 import { ConversationHistoryView } from './ConversationHistoryView';
 import { CheckpointBrowser } from './CheckpointBrowser';
+import { getPhaseData } from '../utils/phaseTracking';
 
 interface AgentProgressProps {
   events: AgentEvent[];
@@ -20,6 +21,9 @@ interface AgentProgressProps {
   onResumeFromCheckpoint?: (checkpoint: IterationCheckpoint) => void;
   onMessageEdit?: (index: number, newMessage: Message) => void;
   allMessages?: Message[]; // Cumulative messages across all agents
+  explorationResult?: AgentResult | null;
+  codeWritingResult?: AgentResult | null;
+  presentationResult?: AgentResult | null;
 }
 
 /**
@@ -55,9 +59,12 @@ export function AgentProgress({
   onResumeFromCheckpoint,
   onMessageEdit,
   allMessages = [],
+  explorationResult,
+  codeWritingResult,
+  presentationResult,
 }: AgentProgressProps) {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
-    new Set(['activity', 'discoveries'])
+    new Set(['exploration', 'code-writing', 'presentation'])
   );
   const [showCheckpointBrowser, setShowCheckpointBrowser] = useState(false);
   const activityRef = useRef<HTMLDivElement>(null);
@@ -72,6 +79,9 @@ export function AgentProgress({
   // Use provided cumulative messages, or fallback to extracting from events
   const messages = allMessages.length > 0 ? allMessages : (result?.conversationHistory || []);
 
+  // Split messages and events by phase
+  const phases = getPhaseData(messages, events);
+
   const toggleSection = (section: string) => {
     setExpandedSections((prev) => {
       const next = new Set(prev);
@@ -85,8 +95,6 @@ export function AgentProgress({
   };
 
   const currentStatus = getLatestStatus(events);
-  const discoveries = getDiscoveries(events);
-  const activityLog = getActivityLog(events);
   const thinkingText = getLatestThinking(events);
   const rateLimitInfo = getRateLimitInfo(events);
 
@@ -149,88 +157,112 @@ export function AgentProgress({
       )}
 
       <div className="progress-sections">
-        {/* Activity Log */}
-        <section className="progress-section">
-          <h3
-            className="section-header"
-            onClick={() => toggleSection('activity')}
-          >
-            <span className="toggle">
-              {expandedSections.has('activity') ? '▼' : '▶'}
-            </span>
-            Activity Log ({activityLog.length})
-          </h3>
-          {expandedSections.has('activity') && (
-            <div className="activity-log" ref={activityRef}>
-              {activityLog.map((item, index) => (
-                <div key={index} className={`activity-item ${item.type}`}>
-                  <span className="activity-icon">{item.icon}</span>
-                  <span className="activity-text">{item.text}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
+        {/* Display each agent phase separately */}
+        {phases.map((phase) => {
+          const phaseResult =
+            phase.name === 'exploration' ? explorationResult :
+            phase.name === 'code-writing' ? codeWritingResult :
+            phase.name === 'presentation' ? presentationResult :
+            null;
 
-        {/* Discoveries */}
-        <section className="progress-section">
-          <h3
-            className="section-header"
-            onClick={() => toggleSection('discoveries')}
-          >
-            <span className="toggle">
-              {expandedSections.has('discoveries') ? '▼' : '▶'}
-            </span>
-            Discoveries ({discoveries.length})
-          </h3>
-          {expandedSections.has('discoveries') && (
-            <div className="discoveries-list">
-              {discoveries.length === 0 ? (
-                <p className="empty-state">No discoveries yet...</p>
-              ) : (
-                discoveries.map((d) => (
-                  <div key={d.id} className={`discovery-item ${d.type}`}>
-                    <span className="discovery-icon">{getDiscoveryIcon(d)}</span>
-                    <div className="discovery-content">
-                      <span className="discovery-description">{d.description}</span>
-                      {d.path && (
-                        <span className="discovery-path">{d.path}</span>
-                      )}
+          const phaseActivityLog = getActivityLog(phase.events);
+          const phaseDiscoveries = getDiscoveries(phase.events);
+
+          return (
+            <div key={phase.name} className="agent-phase-section">
+              <h2
+                className="phase-header"
+                onClick={() => toggleSection(phase.name)}
+              >
+                <span className="toggle">
+                  {expandedSections.has(phase.name) ? '▼' : '▶'}
+                </span>
+                {phase.displayName}
+                {phaseResult && (
+                  <span className="phase-stats">
+                    {phase.messages.length} messages •
+                    {phaseResult.tokenUsage.input.toLocaleString()} in /
+                    {phaseResult.tokenUsage.output.toLocaleString()} out
+                  </span>
+                )}
+              </h2>
+
+              {expandedSections.has(phase.name) && (
+                <div className="phase-content">
+                  {/* Phase Summary */}
+                  {phaseResult && (
+                    <div className="phase-summary">
+                      <h4>Summary</h4>
+                      <p>{phaseResult.summary}</p>
                     </div>
-                  </div>
-                ))
+                  )}
+
+                  {/* Activity Log */}
+                  <section className="progress-section">
+                    <h3 className="section-header">
+                      Activity Log ({phaseActivityLog.length})
+                    </h3>
+                    <div className="activity-log">
+                      {phaseActivityLog.map((item, index) => (
+                        <div key={index} className={`activity-item ${item.type}`}>
+                          <span className="activity-icon">{item.icon}</span>
+                          <span className="activity-text">{item.text}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+
+                  {/* Discoveries (only for exploration) */}
+                  {phase.name === 'exploration' && phaseDiscoveries.length > 0 && (
+                    <section className="progress-section">
+                      <h3 className="section-header">
+                        Discoveries ({phaseDiscoveries.length})
+                      </h3>
+                      <div className="discoveries-list">
+                        {phaseDiscoveries.map((d) => (
+                          <div key={d.id} className={`discovery-item ${d.type}`}>
+                            <span className="discovery-icon">{getDiscoveryIcon(d)}</span>
+                            <div className="discovery-content">
+                              <span className="discovery-description">{d.description}</span>
+                              {d.path && (
+                                <span className="discovery-path">{d.path}</span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  )}
+
+                  {/* Conversation History */}
+                  {phase.messages.length > 0 && (
+                    <section className="progress-section">
+                      <h3 className="section-header">
+                        Conversation History ({phase.messages.length} messages)
+                      </h3>
+                      <ConversationHistoryView
+                        messages={phase.messages}
+                        tokenUsage={phaseResult?.tokenUsage}
+                        editable={!!onMessageEdit}
+                        onMessageEdit={(index) => {
+                          // Adjust index to account for phase offset
+                          const globalIndex = phase.startIndex + index;
+                          if (onMessageEdit) {
+                            onMessageEdit(globalIndex, phase.messages[index]);
+                          }
+                        }}
+                        onResumeFrom={(index) => {
+                          console.log('Resume from message:', phase.startIndex + index);
+                          alert('Resume from message not yet implemented. Use checkpoint browser to resume from a saved checkpoint.');
+                        }}
+                      />
+                    </section>
+                  )}
+                </div>
               )}
             </div>
-          )}
-        </section>
-
-        {/* Conversation History */}
-        {messages.length > 0 && (
-          <section className="progress-section">
-            <h3
-              className="section-header"
-              onClick={() => toggleSection('conversation')}
-            >
-              <span className="toggle">
-                {expandedSections.has('conversation') ? '▼' : '▶'}
-              </span>
-              Conversation History ({messages.length} messages)
-            </h3>
-            {expandedSections.has('conversation') && (
-              <ConversationHistoryView
-                messages={messages}
-                tokenUsage={result?.tokenUsage}
-                editable={!!onMessageEdit}
-                onMessageEdit={onMessageEdit}
-                onResumeFrom={(index) => {
-                  console.log('Resume from message:', index);
-                  // TODO: Implement resume from specific message
-                  alert('Resume from message not yet implemented. Use checkpoint browser to resume from a saved checkpoint.');
-                }}
-              />
-            )}
-          </section>
-        )}
+          );
+        })}
       </div>
 
       {/* Final Result */}

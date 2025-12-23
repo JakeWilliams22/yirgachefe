@@ -477,6 +477,72 @@ body {
   margin-bottom: 0;
 }
 
+/* Agent Phase Sections */
+.agent-phase-section {
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.phase-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  background: var(--color-bg-elevated);
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s;
+}
+
+.phase-header:hover {
+  background: var(--color-bg-hover);
+}
+
+.phase-header .toggle {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+.phase-stats {
+  margin-left: auto;
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+.phase-content {
+  padding: 1rem;
+  background: var(--color-bg);
+}
+
+.phase-summary {
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  background: var(--color-bg-elevated);
+  border-left: 3px solid var(--color-primary);
+  border-radius: 4px;
+}
+
+.phase-summary h4 {
+  margin: 0 0 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.phase-summary p {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
 .section-header {
   display: flex;
   align-items: center;

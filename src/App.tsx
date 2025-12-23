@@ -828,6 +828,9 @@ function App() {
                 allMessages={allConversationHistory}
                 onResumeFromCheckpoint={handleResumeFromCheckpoint}
                 onMessageEdit={handleMessageEdit}
+                explorationResult={explorationResult}
+                codeWritingResult={codeWritingResult}
+                presentationResult={presentationResult}
               />
             )}
 
@@ -853,6 +856,9 @@ function App() {
                   allMessages={allConversationHistory}
                   onResumeFromCheckpoint={handleResumeFromCheckpoint}
                   onMessageEdit={handleMessageEdit}
+                  explorationResult={explorationResult}
+                  codeWritingResult={codeWritingResult}
+                  presentationResult={presentationResult}
                 />
               </>
             )}
@@ -883,6 +889,9 @@ function App() {
                   allMessages={allConversationHistory}
                   onResumeFromCheckpoint={handleResumeFromCheckpoint}
                   onMessageEdit={handleMessageEdit}
+                  explorationResult={explorationResult}
+                  codeWritingResult={codeWritingResult}
+                  presentationResult={presentationResult}
                 />
               </>
             )}
