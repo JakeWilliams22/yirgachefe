@@ -40,6 +40,9 @@ function App() {
     useState<FileSystemDirectoryHandle | null>(null);
   const [events, setEvents] = useState<AgentEvent[]>([]);
   const [result, setResult] = useState<AgentResult | null>(null);
+  const [explorationResult, setExplorationResult] = useState<AgentResult | null>(null);
+  const [codeWritingResult, setCodeWritingResult] = useState<AgentResult | null>(null);
+  const [presentationResult, setPresentationResult] = useState<AgentResult | null>(null);
   const [stopFn, setStopFn] = useState<(() => void) | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [allConversationHistory, setAllConversationHistory] = useState<Message[]>([]);
@@ -205,8 +208,26 @@ function App() {
           // Log event
           loggerRef.current?.logEvent('presentation', event);
 
+          // Accumulate conversation history
+          if (event.type === 'conversation_update') {
+            setAllConversationHistory((prev) => {
+              // Only add new messages that aren't already in prev
+              if (prev.length > 0 && event.messages.length > prev.length) {
+                const newMessages = event.messages.slice(prev.length);
+                return [...prev, ...newMessages];
+              }
+              return event.messages;
+            });
+          }
+
           if (event.type === 'complete') {
             console.log('Presentation complete');
+
+            // Add final conversation to cumulative history
+            setAllConversationHistory((prev) => {
+              const newMessages = event.result.conversationHistory.slice(prev.length);
+              return [...prev, ...newMessages];
+            });
 
             // Extract final HTML before transitioning
             const html = extractPresentationHtml(event.result);
@@ -221,6 +242,8 @@ function App() {
               setPresentationExecutor(null);
             }
 
+            // Store presentation result (keep code writing result too!)
+            setPresentationResult(event.result);
             setResult(event.result);
             setStep('results');
             setStopFn(null);
@@ -336,6 +359,8 @@ function App() {
             }
           }
 
+          // Store code writing result
+          setCodeWritingResult(event.result);
           setResult(event.result);
           setStopFn(null);
 
@@ -422,6 +447,10 @@ function App() {
           // Store final conversation
           setAllConversationHistory(event.result.conversationHistory);
 
+          // Store exploration result
+          setExplorationResult(event.result);
+          setResult(event.result); // Also set as current result
+
           // Transition to code writing
           setStopFn(null);
           setStep('writing-code');
@@ -459,6 +488,9 @@ function App() {
       setStep('exploring');
       setEvents([]);
       setResult(null);
+      setExplorationResult(null);
+      setCodeWritingResult(null);
+      setPresentationResult(null);
       setAllConversationHistory([]); // Clear conversation history for new session
       setHasResumableSession(false);
       setResumableInfo(null);
@@ -574,6 +606,45 @@ function App() {
     }
   }, [presentationExecutor]);
 
+  const handleRetryPresentation = useCallback(() => {
+    // Load the saved code writer result
+    const savedResult = loadCodeWriterResult();
+    if (!savedResult) {
+      console.error('No saved code writer result found');
+      alert('Cannot retry - no saved insights found. Please run the full pipeline again.');
+      return;
+    }
+
+    console.log('Retrying presentation with saved insights');
+
+    // Clean up current executor
+    if (presentationExecutor) {
+      presentationExecutor.destroy();
+      setPresentationExecutor(null);
+    }
+
+    // Reset presentation state but keep earlier conversation history
+    // Find the index where presentation agent started (look for phase transition marker)
+    const presentationStartIndex = allConversationHistory.findIndex(
+      (msg) => msg.role === 'user' &&
+      typeof msg.content === 'string' &&
+      msg.content.includes('PHASE TRANSITION: PRESENTATION AGENT')
+    );
+
+    if (presentationStartIndex !== -1) {
+      // Keep everything before the presentation phase
+      setAllConversationHistory((prev) => prev.slice(0, presentationStartIndex));
+    }
+
+    setEvents([]);
+    setResult(savedResult);
+    setFinalPresentationHtml(null);
+    presentationStartedRef.current = false;
+
+    // Go back to presenting step
+    setStep('presenting');
+  }, [presentationExecutor, allConversationHistory]);
+
   // Handle editing a message in the conversation history
   const handleMessageEdit = useCallback((index: number, newMessage: Message) => {
     console.log('Editing message at index:', index);
@@ -631,6 +702,31 @@ function App() {
 
     // TODO: Implement full resume functionality with AgentRunner.resumeFromIteration()
   }, [stopFn]);
+
+  // Compute cumulative state from all agent phases
+  const cumulativeTokenUsage = {
+    input:
+      (explorationResult?.tokenUsage.input || 0) +
+      (codeWritingResult?.tokenUsage.input || 0) +
+      (presentationResult?.tokenUsage.input || 0),
+    output:
+      (explorationResult?.tokenUsage.output || 0) +
+      (codeWritingResult?.tokenUsage.output || 0) +
+      (presentationResult?.tokenUsage.output || 0),
+  };
+
+  const allDiscoveries = [
+    ...(explorationResult?.discoveries || []),
+    ...(codeWritingResult?.discoveries || []),
+    ...(presentationResult?.discoveries || []),
+  ];
+
+  // Create a combined result for display purposes
+  const displayResult = result ? {
+    ...result,
+    tokenUsage: cumulativeTokenUsage,
+    discoveries: allDiscoveries,
+  } : null;
 
   return (
     <div className={`app ${step === 'presenting' || step === 'results' ? 'presentation-mode' : ''}`}>
@@ -701,10 +797,20 @@ function App() {
           <>
             <div className="exploration-header">
               <h2>{directoryHandle?.name || 'Unknown folder'}</h2>
-              {step === 'results' && (
-                <button className="secondary-button" onClick={handleReset}>
-                  Explore Another Folder
+              {step === 'presenting' && (
+                <button className="secondary-button" onClick={handleRetryPresentation}>
+                  🔄 Retry Presentation
                 </button>
+              )}
+              {step === 'results' && (
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button className="secondary-button" onClick={handleRetryPresentation}>
+                    🔄 Retry Presentation
+                  </button>
+                  <button className="secondary-button" onClick={handleReset}>
+                    Explore Another Folder
+                  </button>
+                </div>
               )}
             </div>
 
@@ -715,7 +821,7 @@ function App() {
             {(step === 'exploring' || step === 'writing-code') && (
               <AgentProgress
                 events={events}
-                result={result}
+                result={displayResult}
                 onStop={handleStop}
                 insights={insights}
                 sessionId={sessionId || undefined}
@@ -740,7 +846,7 @@ function App() {
                 />
                 <AgentProgress
                   events={events}
-                  result={result}
+                  result={displayResult}
                   onStop={handleStop}
                   insights={insights}
                   sessionId={sessionId || undefined}
@@ -771,7 +877,7 @@ function App() {
                 />
                 <AgentProgress
                   events={events}
-                  result={result}
+                  result={displayResult}
                   insights={insights}
                   sessionId={sessionId || undefined}
                   allMessages={allConversationHistory}
