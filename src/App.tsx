@@ -790,7 +790,18 @@ function App() {
             {/* Content placeholder - user will fill this in */}
             <h3>Motivation</h3>
             <p>
-              [Add your motivation content here]
+              Like it or not &mdash; every second you spend online is tracked.
+            </p>
+            <p>
+              For 11 months of the year, we can use this data for its true purpose: generating revenue. But December is a time to use that data for a brief moment of delight—a glimpse into our soul—or to make sure your friends know your #1 artist is someone niche (you're not that mainstream).
+
+              <br /><br />
+
+              Unfortunately, not all of your services nicely wrap up your year for you. Some even make you pay for it!
+
+              <br /><br />
+
+              The most popular services have dedicated websites built for their specific export format, but there's no guarantee those sites handle your data responsibly or even work with this year's export format. I wanted to make a mostly browser-side service that would work for <em>any</em> data I gave it.
             </p>
             <h3>How it works</h3>
             <ol>
@@ -801,7 +812,7 @@ function App() {
                 Wait <code>n</code> hours to receive your data
               </li>
               <li>
-                Select your exported data in Yirgachefe.
+                Select the directory with your unzipped, exported data in Yirgachefe.
               </li>
               <li>
                 A data exploration agent tries to understand the shape of your exported data, including what kind of data it is, and who it belongs to. 
