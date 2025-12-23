@@ -2,11 +2,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
-  background: white;
+  padding: 2.5rem 2rem;
+  background: #FFFFFF;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  margin-bottom: 2rem;
+  box-shadow: 0 2px 8px rgba(109, 76, 65, 0.1);
+  margin-bottom: 2.5rem;
+  border: 1px solid #EFEBE9;
 }
 
 .phase-step-wrapper {
@@ -19,7 +20,7 @@
   flex-direction: column;
   align-items: center;
   gap: 0.75rem;
-  padding: 1rem 2rem;
+  padding: 1rem 2.5rem;
   position: relative;
   transition: all 0.3s ease;
 }
@@ -32,7 +33,7 @@
 .phase-label {
   font-size: 0.95rem;
   font-weight: 600;
-  color: #4a5568;
+  color: #6D4C41;
   text-align: center;
   transition: all 0.3s ease;
 }
@@ -44,7 +45,7 @@
 }
 
 .phase-step.pending .phase-label {
-  color: #a0aec0;
+  color: #BCAAA4;
 }
 
 .phase-step.active .phase-icon {
@@ -53,7 +54,7 @@
 }
 
 .phase-step.active .phase-label {
-  color: #2b6cb0;
+  color: #E67E22;
   font-weight: 700;
 }
 
@@ -62,7 +63,7 @@
 }
 
 .phase-step.completed .phase-label {
-  color: #38a169;
+  color: #F39C12;
 }
 
 /* Pulse animation for active phase */
@@ -74,7 +75,7 @@
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  background: rgba(43, 108, 176, 0.1);
+  background: rgba(230, 126, 34, 0.15);
   animation: pulse 2s ease infinite;
   pointer-events: none;
 }
@@ -103,13 +104,13 @@
 .phase-connector {
   width: 80px;
   height: 3px;
-  background: #e2e8f0;
+  background: #EFEBE9;
   position: relative;
   transition: all 0.5s ease;
 }
 
 .phase-connector.completed {
-  background: linear-gradient(90deg, #38a169, #48bb78);
+  background: linear-gradient(90deg, #E67E22, #F39C12);
 }
 
 .phase-connector.completed::after {
@@ -120,7 +121,7 @@
   transform: translateY(-50%);
   width: 0;
   height: 0;
-  border-left: 8px solid #48bb78;
+  border-left: 8px solid #F39C12;
   border-top: 5px solid transparent;
   border-bottom: 5px solid transparent;
 }

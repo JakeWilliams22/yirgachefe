@@ -4,15 +4,15 @@
 
 .insights-view h3 {
   margin-bottom: 1.5rem;
-  color: #2d3748;
+  color: #3E2723;
   font-size: 1.5rem;
 }
 
 .insights-empty {
   padding: 2rem;
   text-align: center;
-  color: #718096;
-  background: #f7fafc;
+  color: #8D6E63;
+  background: #FFF5E6;
   border-radius: 8px;
 }
 
@@ -25,16 +25,16 @@
 /* Insight Card */
 .insight-card {
   background: white;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #EFEBE9;
   border-radius: 8px;
   padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px rgba(109, 76, 65, 0.08);
   transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .insight-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 8px rgba(109, 76, 65, 0.15);
 }
 
 .insight-header {
@@ -49,14 +49,14 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #718096;
+  color: #8D6E63;
 }
 
 .insight-type-badge {
   font-size: 0.7rem;
   padding: 0.25rem 0.5rem;
-  background: #edf2f7;
-  color: #4a5568;
+  background: #FFF5E6;
+  color: #6D4C41;
   border-radius: 4px;
   font-weight: 500;
 }
@@ -64,7 +64,7 @@
 .insight-title {
   font-size: 1.1rem;
   font-weight: 600;
-  color: #1a202c;
+  color: #3E2723;
   margin: 0 0 1rem 0;
 }
 
@@ -77,15 +77,15 @@
   flex-wrap: wrap;
   gap: 0.5rem;
   font-size: 0.75rem;
-  color: #a0aec0;
+  color: #A1887F;
   padding-top: 0.75rem;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid #EFEBE9;
 }
 
 .metadata-unit,
 .metadata-timeframe,
 .metadata-source {
-  background: #f7fafc;
+  background: #FFF5E6;
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
 }
@@ -98,14 +98,14 @@
 .statistic-number {
   font-size: 2.5rem;
   font-weight: 700;
-  color: #2b6cb0;
+  color: #E67E22;
   line-height: 1;
 }
 
 .statistic-label {
   font-size: 1rem;
   font-weight: 400;
-  color: #718096;
+  color: #8D6E63;
   margin-left: 0.5rem;
 }
 
@@ -118,17 +118,17 @@
 }
 
 .comparison-positive {
-  color: #38a169;
+  color: #F39C12;
   font-weight: 600;
 }
 
 .comparison-negative {
-  color: #e53e3e;
+  color: #C0392B;
   font-weight: 600;
 }
 
 .comparison-previous {
-  color: #718096;
+  color: #8D6E63;
 }
 
 /* Ranking Display */
@@ -143,7 +143,7 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.5rem;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid #EFEBE9;
 }
 
 .ranking-item:last-child {
@@ -152,18 +152,18 @@
 
 .ranking-rank {
   font-weight: 700;
-  color: #2b6cb0;
+  color: #E67E22;
   min-width: 2rem;
 }
 
 .ranking-name {
   flex: 1;
-  color: #2d3748;
+  color: #3E2723;
 }
 
 .ranking-value {
   font-weight: 600;
-  color: #4a5568;
+  color: #6D4C41;
 }
 
 /* Timeline Display */
@@ -183,29 +183,29 @@
   justify-content: space-between;
   align-items: center;
   padding: 0.5rem;
-  background: #f7fafc;
+  background: #FFF5E6;
   border-radius: 4px;
   font-size: 0.9rem;
 }
 
 .timeline-timestamp {
-  color: #718096;
+  color: #8D6E63;
 }
 
 .timeline-value {
   font-weight: 600;
-  color: #2b6cb0;
+  color: #E67E22;
 }
 
 .timeline-label {
-  color: #4a5568;
+  color: #6D4C41;
   font-size: 0.8rem;
 }
 
 .timeline-more {
   margin-top: 0.5rem;
   text-align: center;
-  color: #a0aec0;
+  color: #A1887F;
   font-size: 0.85rem;
 }
 
@@ -230,36 +230,36 @@
 }
 
 .distribution-name {
-  color: #2d3748;
+  color: #3E2723;
   font-weight: 500;
 }
 
 .distribution-percentage {
-  color: #2b6cb0;
+  color: #E67E22;
   font-weight: 600;
 }
 
 .distribution-bar {
   height: 8px;
-  background: #e2e8f0;
+  background: #EFEBE9;
   border-radius: 4px;
   overflow: hidden;
 }
 
 .distribution-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, #4299e1, #2b6cb0);
+  background: linear-gradient(90deg, #F39C12, #E67E22);
   transition: width 0.3s ease;
 }
 
 .distribution-value {
   font-size: 0.8rem;
-  color: #718096;
+  color: #8D6E63;
 }
 
 .distribution-more {
   text-align: center;
-  color: #a0aec0;
+  color: #A1887F;
   font-size: 0.85rem;
 }
 
@@ -283,7 +283,7 @@
 
 .comparison-label {
   font-size: 0.85rem;
-  color: #718096;
+  color: #8D6E63;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -291,12 +291,12 @@
 .comparison-number {
   font-size: 1.75rem;
   font-weight: 700;
-  color: #2d3748;
+  color: #3E2723;
 }
 
 .comparison-arrow {
   font-size: 1.5rem;
-  color: #cbd5e0;
+  color: #D7CCC8;
 }
 
 .comparison-change {
@@ -305,12 +305,12 @@
 }
 
 .change-positive {
-  color: #38a169;
+  color: #F39C12;
   font-weight: 700;
 }
 
 .change-negative {
-  color: #e53e3e;
+  color: #C0392B;
   font-weight: 700;
 }
 
@@ -334,14 +334,14 @@
 
 .achievement-description {
   font-size: 1rem;
-  color: #2d3748;
+  color: #3E2723;
   margin: 0.5rem 0;
 }
 
 .achievement-progress-bar {
   position: relative;
   height: 24px;
-  background: #e2e8f0;
+  background: #EFEBE9;
   border-radius: 12px;
   overflow: hidden;
   margin-top: 1rem;
@@ -349,7 +349,7 @@
 
 .achievement-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #48bb78, #38a169);
+  background: linear-gradient(90deg, #F39C12, #E67E22);
   transition: width 0.3s ease;
 }
 
@@ -360,6 +360,6 @@
   transform: translate(-50%, -50%);
   font-size: 0.75rem;
   font-weight: 600;
-  color: #2d3748;
+  color: #3E2723;
   text-shadow: 0 0 2px white;
 }
