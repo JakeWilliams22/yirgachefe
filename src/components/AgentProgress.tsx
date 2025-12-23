@@ -4,14 +4,22 @@
 
 import { useState, useEffect, useRef } from 'react';
 import type { AgentEvent, AgentResult, Discovery, RateLimitUsage } from '../agents/types';
+import type { Message } from '../services/anthropic';
 import type { Insight } from '../types/insights';
+import type { IterationCheckpoint } from '../services/persistence';
 import { InsightsView } from './InsightsView';
+import { ConversationHistoryView } from './ConversationHistoryView';
+import { CheckpointBrowser } from './CheckpointBrowser';
 
 interface AgentProgressProps {
   events: AgentEvent[];
   result: AgentResult | null;
   onStop?: () => void;
   insights?: Insight[];
+  sessionId?: string;
+  onResumeFromCheckpoint?: (checkpoint: IterationCheckpoint) => void;
+  onMessageEdit?: (index: number, newMessage: Message) => void;
+  allMessages?: Message[]; // Cumulative messages across all agents
 }
 
 /**
@@ -38,10 +46,20 @@ function RateLimitCountdown({ waitMs, startTime }: { waitMs: number; startTime: 
   return <>{secondsRemaining}s</>;
 }
 
-export function AgentProgress({ events, result, onStop, insights = [] }: AgentProgressProps) {
+export function AgentProgress({
+  events,
+  result,
+  onStop,
+  insights = [],
+  sessionId,
+  onResumeFromCheckpoint,
+  onMessageEdit,
+  allMessages = [],
+}: AgentProgressProps) {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set(['activity', 'discoveries'])
   );
+  const [showCheckpointBrowser, setShowCheckpointBrowser] = useState(false);
   const activityRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll activity log
@@ -50,6 +68,9 @@ export function AgentProgress({ events, result, onStop, insights = [] }: AgentPr
       activityRef.current.scrollTop = activityRef.current.scrollHeight;
     }
   }, [events]);
+
+  // Use provided cumulative messages, or fallback to extracting from events
+  const messages = allMessages.length > 0 ? allMessages : (result?.conversationHistory || []);
 
   const toggleSection = (section: string) => {
     setExpandedSections((prev) => {
@@ -100,6 +121,15 @@ export function AgentProgress({ events, result, onStop, insights = [] }: AgentPr
         {currentStatus === 'running' && onStop && (
           <button className="stop-button" onClick={onStop}>
             Stop
+          </button>
+        )}
+        {sessionId && (
+          <button
+            className="checkpoint-button"
+            onClick={() => setShowCheckpointBrowser(true)}
+            title="View saved checkpoints"
+          >
+            📑 Checkpoints
           </button>
         )}
       </div>
@@ -173,6 +203,34 @@ export function AgentProgress({ events, result, onStop, insights = [] }: AgentPr
             </div>
           )}
         </section>
+
+        {/* Conversation History */}
+        {messages.length > 0 && (
+          <section className="progress-section">
+            <h3
+              className="section-header"
+              onClick={() => toggleSection('conversation')}
+            >
+              <span className="toggle">
+                {expandedSections.has('conversation') ? '▼' : '▶'}
+              </span>
+              Conversation History ({messages.length} messages)
+            </h3>
+            {expandedSections.has('conversation') && (
+              <ConversationHistoryView
+                messages={messages}
+                tokenUsage={result?.tokenUsage}
+                editable={!!onMessageEdit}
+                onMessageEdit={onMessageEdit}
+                onResumeFrom={(index) => {
+                  console.log('Resume from message:', index);
+                  // TODO: Implement resume from specific message
+                  alert('Resume from message not yet implemented. Use checkpoint browser to resume from a saved checkpoint.');
+                }}
+              />
+            )}
+          </section>
+        )}
       </div>
 
       {/* Final Result */}
@@ -198,6 +256,15 @@ export function AgentProgress({ events, result, onStop, insights = [] }: AgentPr
 
       {/* Generated Insights */}
       {insights.length > 0 && <InsightsView insights={insights} />}
+
+      {/* Checkpoint Browser */}
+      {showCheckpointBrowser && sessionId && onResumeFromCheckpoint && (
+        <CheckpointBrowser
+          sessionId={sessionId}
+          onResumeFromCheckpoint={onResumeFromCheckpoint}
+          onClose={() => setShowCheckpointBrowser(false)}
+        />
+      )}
     </div>
   );
 }

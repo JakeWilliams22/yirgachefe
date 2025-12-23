@@ -79,7 +79,7 @@ export interface ExplorationAgentOptions {
   model?: string;
   maxIterations?: number;
   /** Callback when checkpoint is saved */
-  onCheckpoint?: (data: CheckpointData) => void;
+  onCheckpoint?: (data: CheckpointData, iteration: number) => void;
   /** Checkpoint to resume from */
   resumeFrom?: CheckpointData;
 }

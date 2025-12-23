@@ -202,7 +202,7 @@ interface PresentationAgentConfig {
   executor: PresentationExecutor;
   apiKey: string;
   onScreenshot?: (dataUrl: string) => void;
-  onCheckpoint?: (data: CheckpointData) => void;
+  onCheckpoint?: (data: CheckpointData, iteration: number) => void;
 }
 
 export interface PresentationAgent {

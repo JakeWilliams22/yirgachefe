@@ -11,6 +11,7 @@ import { PresentationExecutor } from './services/presentationExecution';
 import type { CheckpointData } from './agents/AgentRunner';
 import type { AgentEvent, AgentResult } from './agents/types';
 import type { Insight } from './types/insights';
+import type { Message } from './services/anthropic';
 import {
   saveApiKey,
   loadApiKey,
@@ -23,7 +24,9 @@ import {
   saveCodeWriterResult,
   loadCodeWriterResult,
   clearCodeWriterResult,
+  saveIterationCheckpoint,
   type AgentCheckpoint,
+  type IterationCheckpoint,
 } from './services/persistence';
 import { Logger } from './services/logger';
 import './App.css';
@@ -39,6 +42,7 @@ function App() {
   const [result, setResult] = useState<AgentResult | null>(null);
   const [stopFn, setStopFn] = useState<(() => void) | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [allConversationHistory, setAllConversationHistory] = useState<Message[]>([]);
   const [hasResumableSession, setHasResumableSession] = useState(false);
   const [resumableInfo, setResumableInfo] = useState<{
     directoryName: string;
@@ -96,9 +100,10 @@ function App() {
   }, []);
 
   const handleCheckpoint = useCallback(
-    (data: CheckpointData) => {
+    (data: CheckpointData, iteration: number) => {
       if (!sessionId) return;
 
+      // Save to old system for backwards compatibility
       const checkpoint: AgentCheckpoint = {
         sessionId,
         messages: data.messages,
@@ -108,8 +113,17 @@ function App() {
         status: 'paused',
         lastUpdatedAt: new Date().toISOString(),
       };
-
       saveCheckpoint(checkpoint);
+
+      // Save to new multi-iteration system
+      const iterationCheckpoint: IterationCheckpoint = {
+        iteration,
+        timestamp: new Date().toISOString(),
+        messages: data.messages,
+        discoveries: data.discoveries,
+        tokenUsage: data.tokenUsage,
+      };
+      saveIterationCheckpoint(sessionId, iterationCheckpoint, 'exploration');
     },
     [sessionId]
   );
@@ -128,6 +142,15 @@ function App() {
 
       console.log('Starting presentation');
       presentationStartedRef.current = true;
+
+      // Add phase transition marker to conversation history
+      setAllConversationHistory((prev) => [
+        ...prev,
+        {
+          role: 'user',
+          content: '--- PHASE TRANSITION: PRESENTATION AGENT --- \n\nREMINDER: We are creating a 2025 Year in Review presentation. Use the insights from 2025 data.',
+        },
+      ]);
 
       // Extract code output from the last successful execute_code tool result
       let codeOutput = 'No insights generated yet.';
@@ -248,6 +271,15 @@ function App() {
       // Log phase transition
       loggerRef.current?.log('system', 'Starting code writing phase');
 
+      // Add phase transition marker to conversation history
+      setAllConversationHistory((prev) => [
+        ...prev,
+        {
+          role: 'user',
+          content: '--- PHASE TRANSITION: CODE WRITING AGENT --- \n\nREMINDER: We are creating a 2025 Year in Review. Focus on 2025 data and insights.',
+        },
+      ]);
+
       const agent = createCodeWriterAgent({
         rootHandle: handle,
         discoveries: explorationResult.discoveries,
@@ -265,7 +297,25 @@ function App() {
         // Log event
         loggerRef.current?.logEvent('code-writing', event);
 
+        // Accumulate conversation history
+        if (event.type === 'conversation_update') {
+          setAllConversationHistory((prev) => {
+            // Only add new messages that aren't already in prev
+            if (prev.length > 0 && event.messages.length > prev.length) {
+              const newMessages = event.messages.slice(prev.length);
+              return [...prev, ...newMessages];
+            }
+            return event.messages;
+          });
+        }
+
         if (event.type === 'complete') {
+          // Add final conversation to cumulative history
+          setAllConversationHistory((prev) => {
+            const newMessages = event.result.conversationHistory.slice(prev.length);
+            return [...prev, ...newMessages];
+          });
+
           // Parse insights from result for display
           const generatedInsights = parseInsightsFromResult(event.result);
           setInsights(generatedInsights);
@@ -296,7 +346,7 @@ function App() {
           // Transition to presentation phase
           console.log('Transitioning to presentation phase');
           setStep('presenting');
-          setEvents([]); // Clear events for new phase
+          // Don't clear events - preserve conversation history
           presentationStartedRef.current = false; // Reset flag
         }
 
@@ -363,7 +413,15 @@ function App() {
         // Log event
         loggerRef.current?.logEvent('exploration', event);
 
+        // Accumulate conversation history
+        if (event.type === 'conversation_update') {
+          setAllConversationHistory(event.messages);
+        }
+
         if (event.type === 'complete') {
+          // Store final conversation
+          setAllConversationHistory(event.result.conversationHistory);
+
           // Transition to code writing
           setStopFn(null);
           setStep('writing-code');
@@ -401,6 +459,7 @@ function App() {
       setStep('exploring');
       setEvents([]);
       setResult(null);
+      setAllConversationHistory([]); // Clear conversation history for new session
       setHasResumableSession(false);
       setResumableInfo(null);
 
@@ -515,6 +574,64 @@ function App() {
     }
   }, [presentationExecutor]);
 
+  // Handle editing a message in the conversation history
+  const handleMessageEdit = useCallback((index: number, newMessage: Message) => {
+    console.log('Editing message at index:', index);
+
+    // Update the conversation history
+    setAllConversationHistory((prev) => {
+      const updated = [...prev];
+      updated[index] = newMessage;
+      return updated;
+    });
+
+    // If we have a session, save as a new checkpoint with the edited conversation
+    if (sessionId) {
+      const iterationCheckpoint: IterationCheckpoint = {
+        iteration: -1, // Special marker for manually edited checkpoint
+        timestamp: new Date().toISOString(),
+        messages: allConversationHistory.map((msg, i) => i === index ? newMessage : msg),
+        discoveries: result?.discoveries || [],
+        tokenUsage: result?.tokenUsage || { input: 0, output: 0 },
+        label: `Edited at message ${index}`,
+      };
+
+      // Determine agent type based on current step
+      const agentType = step === 'exploring' ? 'exploration'
+        : step === 'writing-code' ? 'code-writing'
+        : 'presentation';
+
+      saveIterationCheckpoint(sessionId, iterationCheckpoint, agentType);
+      console.log('Saved edited checkpoint');
+    }
+  }, [sessionId, allConversationHistory, result, step]);
+
+  // Handle resuming from a specific checkpoint
+  const handleResumeFromCheckpoint = useCallback(async (checkpoint: IterationCheckpoint) => {
+    console.log('Resuming from checkpoint iteration:', checkpoint.iteration);
+
+    // Stop any currently running agent
+    if (stopFn) {
+      console.log('Stopping current agent...');
+      stopFn();
+      setStopFn(null);
+    }
+
+    // Restore conversation history from checkpoint
+    setAllConversationHistory(checkpoint.messages);
+    setEvents([]);
+    setResult(null);
+
+    // For now, we'll need the user to restart the agent manually with the edited state
+    // A full implementation would call agent.resumeFromIteration() here
+    // But that requires knowing which agent was running and having access to directory handle
+
+    alert('Checkpoint loaded. The conversation has been restored to iteration ' + checkpoint.iteration +
+          '. You can now review the messages or continue manually.');
+
+    // TODO: Implement full resume functionality with AgentRunner.resumeFromIteration()
+  }, [stopFn]);
+
   return (
     <div className={`app ${step === 'presenting' || step === 'results' ? 'presentation-mode' : ''}`}>
       <header className="app-header">
@@ -601,6 +718,10 @@ function App() {
                 result={result}
                 onStop={handleStop}
                 insights={insights}
+                sessionId={sessionId || undefined}
+                allMessages={allConversationHistory}
+                onResumeFromCheckpoint={handleResumeFromCheckpoint}
+                onMessageEdit={handleMessageEdit}
               />
             )}
 
@@ -622,6 +743,10 @@ function App() {
                   result={result}
                   onStop={handleStop}
                   insights={insights}
+                  sessionId={sessionId || undefined}
+                  allMessages={allConversationHistory}
+                  onResumeFromCheckpoint={handleResumeFromCheckpoint}
+                  onMessageEdit={handleMessageEdit}
                 />
               </>
             )}
@@ -648,6 +773,10 @@ function App() {
                   events={events}
                   result={result}
                   insights={insights}
+                  sessionId={sessionId || undefined}
+                  allMessages={allConversationHistory}
+                  onResumeFromCheckpoint={handleResumeFromCheckpoint}
+                  onMessageEdit={handleMessageEdit}
                 />
               </>
             )}

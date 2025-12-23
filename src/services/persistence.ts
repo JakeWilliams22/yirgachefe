@@ -37,6 +37,29 @@ export interface AgentCheckpoint {
   lastUpdatedAt: string;
 }
 
+/**
+ * Single iteration checkpoint.
+ */
+export interface IterationCheckpoint {
+  iteration: number;
+  timestamp: string;
+  messages: Message[];
+  discoveries: Discovery[];
+  tokenUsage: { input: number; output: number };
+  label?: string;
+}
+
+/**
+ * Collection of checkpoints for a session.
+ */
+export interface SessionCheckpoints {
+  sessionId: string;
+  agentType: 'exploration' | 'code-writing' | 'presentation';
+  checkpoints: IterationCheckpoint[];
+  currentIteration: number;
+  lastUpdated: string;
+}
+
 // --- API Key (Session Storage - cleared on browser close) ---
 
 export function saveApiKey(apiKey: string): void {
@@ -217,5 +240,159 @@ export function clearCodeWriterResult(): void {
     localStorage.removeItem(CODE_WRITER_RESULT_KEY);
   } catch (e) {
     console.warn('Failed to clear code writer result:', e);
+  }
+}
+
+// --- Multi-Iteration Checkpoints (New System) ---
+
+const MAX_CHECKPOINTS = 50; // Keep last 50 iterations
+
+function getCheckpointsKey(sessionId: string): string {
+  return `${STORAGE_PREFIX}checkpoints_${sessionId}`;
+}
+
+/**
+ * Save a checkpoint for a specific iteration.
+ */
+export function saveIterationCheckpoint(
+  sessionId: string,
+  checkpoint: IterationCheckpoint,
+  agentType: 'exploration' | 'code-writing' | 'presentation' = 'exploration'
+): void {
+  try {
+    const key = getCheckpointsKey(sessionId);
+    const existing = loadSessionCheckpoints(sessionId);
+
+    const checkpoints: SessionCheckpoints = existing || {
+      sessionId,
+      agentType,
+      checkpoints: [],
+      currentIteration: 0,
+      lastUpdated: new Date().toISOString(),
+    };
+
+    // Remove existing checkpoint for this iteration if any
+    checkpoints.checkpoints = checkpoints.checkpoints.filter(
+      (c) => c.iteration !== checkpoint.iteration
+    );
+
+    // Add new checkpoint
+    checkpoints.checkpoints.push(checkpoint);
+
+    // Sort by iteration
+    checkpoints.checkpoints.sort((a, b) => a.iteration - b.iteration);
+
+    // Keep only last MAX_CHECKPOINTS
+    if (checkpoints.checkpoints.length > MAX_CHECKPOINTS) {
+      checkpoints.checkpoints = checkpoints.checkpoints.slice(-MAX_CHECKPOINTS);
+    }
+
+    // Update metadata
+    checkpoints.currentIteration = checkpoint.iteration;
+    checkpoints.lastUpdated = new Date().toISOString();
+
+    localStorage.setItem(key, JSON.stringify(checkpoints));
+  } catch (e) {
+    console.warn('Failed to save iteration checkpoint:', e);
+  }
+}
+
+/**
+ * Load all checkpoints for a session.
+ */
+export function loadSessionCheckpoints(sessionId: string): SessionCheckpoints | null {
+  try {
+    const key = getCheckpointsKey(sessionId);
+    const data = localStorage.getItem(key);
+    return data ? JSON.parse(data) : null;
+  } catch (e) {
+    console.warn('Failed to load session checkpoints:', e);
+    return null;
+  }
+}
+
+/**
+ * Get checkpoint at a specific iteration.
+ */
+export function getCheckpointAtIteration(
+  sessionId: string,
+  iteration: number
+): IterationCheckpoint | null {
+  const session = loadSessionCheckpoints(sessionId);
+  if (!session) return null;
+
+  return session.checkpoints.find((c) => c.iteration === iteration) || null;
+}
+
+/**
+ * List all available checkpoints with metadata.
+ */
+export function listAvailableCheckpoints(
+  sessionId: string
+): Array<{ iteration: number; label: string; timestamp: string; messageCount: number; tokenUsage: number }> {
+  const session = loadSessionCheckpoints(sessionId);
+  if (!session) return [];
+
+  return session.checkpoints.map((c) => ({
+    iteration: c.iteration,
+    label: c.label || `Iteration ${c.iteration}`,
+    timestamp: c.timestamp,
+    messageCount: c.messages.length,
+    tokenUsage: c.tokenUsage.input + c.tokenUsage.output,
+  }));
+}
+
+/**
+ * Delete a specific checkpoint.
+ */
+export function deleteCheckpoint(sessionId: string, iteration: number): void {
+  try {
+    const session = loadSessionCheckpoints(sessionId);
+    if (!session) return;
+
+    session.checkpoints = session.checkpoints.filter((c) => c.iteration !== iteration);
+    session.lastUpdated = new Date().toISOString();
+
+    const key = getCheckpointsKey(sessionId);
+    localStorage.setItem(key, JSON.stringify(session));
+  } catch (e) {
+    console.warn('Failed to delete checkpoint:', e);
+  }
+}
+
+/**
+ * Update label for a checkpoint.
+ */
+export function updateCheckpointLabel(
+  sessionId: string,
+  iteration: number,
+  label: string
+): void {
+  try {
+    const session = loadSessionCheckpoints(sessionId);
+    if (!session) return;
+
+    const checkpoint = session.checkpoints.find((c) => c.iteration === iteration);
+    if (checkpoint) {
+      checkpoint.label = label;
+      session.lastUpdated = new Date().toISOString();
+
+      const key = getCheckpointsKey(sessionId);
+      localStorage.setItem(key, JSON.stringify(session));
+    }
+  } catch (e) {
+    console.warn('Failed to update checkpoint label:', e);
+  }
+}
+
+/**
+ * Clear all checkpoints for a session.
+ */
+export function clearSessionCheckpoints(sessionId: string): void {
+  try {
+    const key = getCheckpointsKey(sessionId);
+    localStorage.removeItem(key);
+  } catch (e) {
+    console.warn('Failed to clear session checkpoints:', e);
   }
 }

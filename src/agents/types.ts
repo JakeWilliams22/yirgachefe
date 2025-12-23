@@ -59,15 +59,18 @@ export type AgentStatus = 'idle' | 'running' | 'complete' | 'error';
  * An event emitted during agent execution.
  */
 export type AgentEvent =
-  | { type: 'status_change'; status: AgentStatus; message?: string }
-  | { type: 'thinking'; text: string }
-  | { type: 'tool_call'; toolName: string; input: unknown }
-  | { type: 'tool_result'; toolName: string; result: ToolResult }
-  | { type: 'message'; role: 'assistant' | 'user'; content: string }
-  | { type: 'discovery'; discovery: Discovery }
-  | { type: 'error'; error: string }
+  | { type: 'status_change'; status: AgentStatus; message?: string; iteration?: number }
+  | { type: 'thinking'; text: string; iteration?: number }
+  | { type: 'tool_call'; toolName: string; input: unknown; iteration?: number }
+  | { type: 'tool_result'; toolName: string; result: ToolResult; iteration?: number }
+  | { type: 'message'; role: 'assistant' | 'user'; content: string; iteration?: number; messageIndex?: number }
+  | { type: 'discovery'; discovery: Discovery; iteration?: number }
+  | { type: 'error'; error: string; iteration?: number }
   | { type: 'complete'; result: AgentResult }
-  | { type: 'rate_limit'; waiting: boolean; waitMs?: number; message?: string; usage?: RateLimitUsage; timestamp?: number };
+  | { type: 'rate_limit'; waiting: boolean; waitMs?: number; message?: string; usage?: RateLimitUsage; timestamp?: number }
+  | { type: 'iteration_start'; iteration: number; messageCount: number }
+  | { type: 'iteration_complete'; iteration: number; tokenUsage: { input: number; output: number } }
+  | { type: 'conversation_update'; messages: Message[]; iteration: number };
 
 /**
  * Rate limit usage info.

@@ -391,7 +391,7 @@ export interface CodeWriterAgentOptions {
   apiKey: string;
   model?: string;
   maxIterations?: number;
-  onCheckpoint?: (data: CheckpointData) => void;
+  onCheckpoint?: (data: CheckpointData, iteration: number) => void;
   resumeFrom?: CheckpointData;
 }
 

@@ -37,9 +37,11 @@ export interface CheckpointData {
 
 export interface AgentRunnerOptions {
   /** Callback to save checkpoint state */
-  onCheckpoint?: (data: CheckpointData) => void;
+  onCheckpoint?: (data: CheckpointData, iteration: number) => void;
   /** Interval between checkpoints (in iterations) */
   checkpointInterval?: number;
+  /** Session ID for multi-iteration checkpoints */
+  sessionId?: string;
 }
 
 export class AgentRunner {
@@ -137,12 +139,15 @@ export class AgentRunner {
    */
   private saveCheckpoint(state: AgentExecutionState, iteration: number): void {
     if (this.options.onCheckpoint) {
-      this.options.onCheckpoint({
-        messages: state.messages,
-        discoveries: state.discoveries,
-        tokenUsage: state.tokenUsage,
-        iteration,
-      });
+      this.options.onCheckpoint(
+        {
+          messages: state.messages,
+          discoveries: state.discoveries,
+          tokenUsage: state.tokenUsage,
+          iteration,
+        },
+        iteration
+      );
     }
   }
 
@@ -188,6 +193,45 @@ export class AgentRunner {
   }
 
   /**
+   * Resume from a specific iteration with optional new message.
+   */
+  async resumeFromIteration(
+    checkpoint: CheckpointData,
+    newUserMessage?: string
+  ): Promise<AgentResult> {
+    const state: AgentExecutionState = {
+      status: 'running',
+      messages: [...checkpoint.messages],
+      discoveries: checkpoint.discoveries,
+      tokenUsage: checkpoint.tokenUsage,
+    };
+
+    // Optionally append new user message
+    if (newUserMessage) {
+      state.messages.push({
+        role: 'user',
+        content: newUserMessage,
+      });
+    }
+
+    this.emit({ type: 'status_change', status: 'running', message: 'Resuming from iteration...' });
+
+    // Emit existing discoveries so UI shows them
+    for (const discovery of state.discoveries) {
+      this.emit({ type: 'discovery', discovery });
+    }
+
+    // Emit conversation update with current state
+    this.emit({
+      type: 'conversation_update',
+      messages: state.messages,
+      iteration: checkpoint.iteration,
+    });
+
+    return this.executeLoop(state, checkpoint.iteration, null);
+  }
+
+  /**
    * Main execution loop.
    */
   private async executeLoop(
@@ -200,7 +244,7 @@ export class AgentRunner {
     this.emit({ type: 'status_change', status: 'running' });
 
     if (initialPrompt) {
-      this.emit({ type: 'message', role: 'user', content: initialPrompt });
+      this.emit({ type: 'message', role: 'user', content: initialPrompt, messageIndex: 0 });
     }
 
     const toolDefinitions = this.config.tools.map(toolToDefinition);
@@ -217,6 +261,13 @@ export class AgentRunner {
         }
 
         iteration++;
+
+        // Emit iteration start event
+        this.emit({
+          type: 'iteration_start',
+          iteration,
+          messageCount: state.messages.length,
+        });
 
         // Checkpoint periodically
         if (
@@ -245,7 +296,7 @@ export class AgentRunner {
           // Extract text content (agent's thinking/response)
           const textContent = extractTextContent(response);
           if (textContent) {
-            this.emit({ type: 'thinking', text: textContent });
+            this.emit({ type: 'thinking', text: textContent, iteration });
           }
 
           // Check if we're done (no tool use)
@@ -260,11 +311,27 @@ export class AgentRunner {
               type: 'message',
               role: 'assistant',
               content: textContent,
+              iteration,
+              messageIndex: state.messages.length - 1,
+            });
+
+            // Emit iteration complete
+            this.emit({
+              type: 'iteration_complete',
+              iteration,
+              tokenUsage: state.tokenUsage,
+            });
+
+            // Emit conversation update
+            this.emit({
+              type: 'conversation_update',
+              messages: state.messages,
+              iteration,
             });
 
             // Agent is done
             state.status = 'complete';
-            this.emit({ type: 'status_change', status: 'complete' });
+            this.emit({ type: 'status_change', status: 'complete', iteration });
 
             // Clear checkpoint on successful completion
             this.saveCheckpoint(state, iteration);
@@ -299,6 +366,7 @@ export class AgentRunner {
                 type: 'tool_call',
                 toolName: toolUse.name,
                 input: toolUse.input,
+                iteration,
               });
 
               const tool = this.findTool(toolUse.name);
@@ -319,6 +387,7 @@ export class AgentRunner {
                   type: 'tool_result',
                   toolName: toolUse.name,
                   result,
+                  iteration,
                 });
 
                 // Check for discoveries in the result
@@ -350,7 +419,7 @@ export class AgentRunner {
                 }
               } catch (error) {
                 const errorMessage = `Tool execution error: ${(error as Error).message}`;
-                this.emit({ type: 'error', error: errorMessage });
+                this.emit({ type: 'error', error: errorMessage, iteration });
                 toolResults.push(createToolResult(toolUse.id, errorMessage, true));
               }
             }
@@ -359,6 +428,20 @@ export class AgentRunner {
             state.messages.push({
               role: 'user',
               content: toolResults,
+            });
+
+            // Emit iteration complete
+            this.emit({
+              type: 'iteration_complete',
+              iteration,
+              tokenUsage: state.tokenUsage,
+            });
+
+            // Emit conversation update
+            this.emit({
+              type: 'conversation_update',
+              messages: state.messages,
+              iteration,
             });
           }
         } catch (error) {
@@ -376,6 +459,7 @@ export class AgentRunner {
             this.emit({
               type: 'error',
               error: `API error (attempt ${consecutiveErrors}/${MAX_CONSECUTIVE_ERRORS}): ${(error as Error).message}. Retrying...`,
+              iteration,
             });
             // Wait before retry (exponential backoff)
             await this.sleep(Math.pow(2, consecutiveErrors) * 1000);
@@ -396,8 +480,9 @@ export class AgentRunner {
         type: 'status_change',
         status: 'error',
         message: state.error,
+        iteration,
       });
-      this.emit({ type: 'error', error: state.error });
+      this.emit({ type: 'error', error: state.error, iteration });
 
       return {
         success: false,
@@ -416,8 +501,9 @@ export class AgentRunner {
         type: 'status_change',
         status: 'error',
         message: state.error,
+        iteration,
       });
-      this.emit({ type: 'error', error: state.error });
+      this.emit({ type: 'error', error: state.error, iteration });
 
       return {
         success: false,
