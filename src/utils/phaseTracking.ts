@@ -25,9 +25,9 @@ export function splitMessagesByPhase(messages: Message[]): PhaseData[] {
 
   messages.forEach((msg, index) => {
     if (msg.role === 'user' && typeof msg.content === 'string') {
-      if (msg.content.includes('PHASE TRANSITION: CODE WRITING AGENT')) {
+      if (msg.content.includes('CODE WRITING AGENT')) {
         transitionIndices.push({ index, phase: 'code-writing', displayName: 'Code Writing Agent' });
-      } else if (msg.content.includes('PHASE TRANSITION: PRESENTATION AGENT')) {
+      } else if (msg.content.includes('PRESENTATION AGENT')) {
         transitionIndices.push({ index, phase: 'presentation', displayName: 'Presentation Agent' });
       }
     }

@@ -6,10 +6,8 @@ import { useState, useEffect, useRef } from 'react';
 import type { AgentEvent, AgentResult, Discovery, RateLimitUsage } from '../agents/types';
 import type { Message } from '../services/anthropic';
 import type { Insight } from '../types/insights';
-import type { IterationCheckpoint } from '../services/persistence';
 import { InsightsView } from './InsightsView';
 import { ConversationHistoryView } from './ConversationHistoryView';
-import { CheckpointBrowser } from './CheckpointBrowser';
 import { getPhaseData } from '../utils/phaseTracking';
 
 interface AgentProgressProps {
@@ -17,8 +15,6 @@ interface AgentProgressProps {
   result: AgentResult | null;
   onStop?: () => void;
   insights?: Insight[];
-  sessionId?: string;
-  onResumeFromCheckpoint?: (checkpoint: IterationCheckpoint) => void;
   onMessageEdit?: (index: number, newMessage: Message) => void;
   allMessages?: Message[]; // Cumulative messages across all agents
   explorationResult?: AgentResult | null;
@@ -55,8 +51,6 @@ export function AgentProgress({
   result,
   onStop,
   insights = [],
-  sessionId,
-  onResumeFromCheckpoint,
   onMessageEdit,
   allMessages = [],
   explorationResult,
@@ -66,7 +60,6 @@ export function AgentProgress({
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set(['exploration', 'code-writing', 'presentation'])
   );
-  const [showCheckpointBrowser, setShowCheckpointBrowser] = useState(false);
   const activityRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll activity log
@@ -121,23 +114,11 @@ export function AgentProgress({
               className="rate-limit-bar"
               style={{ width: `${Math.min(rateLimitInfo.usage.utilizationPercent, 100)}%` }}
             />
-            <span className="rate-limit-text">
-              {rateLimitInfo.usage.utilizationPercent}% tokens
-            </span>
           </span>
         )}
         {currentStatus === 'running' && onStop && (
           <button className="stop-button" onClick={onStop}>
             Stop
-          </button>
-        )}
-        {sessionId && (
-          <button
-            className="checkpoint-button"
-            onClick={() => setShowCheckpointBrowser(true)}
-            title="View saved checkpoints"
-          >
-            📑 Checkpoints
           </button>
         )}
       </div>
@@ -251,10 +232,6 @@ export function AgentProgress({
                             onMessageEdit(globalIndex, phase.messages[index]);
                           }
                         }}
-                        onResumeFrom={(index) => {
-                          console.log('Resume from message:', phase.startIndex + index);
-                          alert('Resume from message not yet implemented. Use checkpoint browser to resume from a saved checkpoint.');
-                        }}
                       />
                     </section>
                   )}
@@ -288,15 +265,6 @@ export function AgentProgress({
 
       {/* Generated Insights */}
       {insights.length > 0 && <InsightsView insights={insights} />}
-
-      {/* Checkpoint Browser */}
-      {showCheckpointBrowser && sessionId && onResumeFromCheckpoint && (
-        <CheckpointBrowser
-          sessionId={sessionId}
-          onResumeFromCheckpoint={onResumeFromCheckpoint}
-          onClose={() => setShowCheckpointBrowser(false)}
-        />
-      )}
     </div>
   );
 }

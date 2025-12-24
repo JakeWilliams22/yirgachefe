@@ -176,8 +176,7 @@ export async function readFileAsText(
   // For very large files, only read a portion
   if (options.maxBytes && file.size > options.maxBytes) {
     const blob = file.slice(0, options.maxBytes);
-    const text = await blob.text();
-    return text + `\n\n[... truncated, file is ${formatBytes(file.size)} total]`;
+    return blob.text();
   }
 
   return file.text();

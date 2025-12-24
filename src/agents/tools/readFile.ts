@@ -13,8 +13,10 @@ import {
 
 export interface ReadFileInput {
   path: string;
-  /** Number of lines to read from start. Default: 30 */
+  /** Number of lines to read. Default: 30 */
   lines?: number;
+  /** Start reading from this line number (0-indexed). Default: 0 */
+  offset?: number;
   /** Read entire file (use sparingly). Default: false */
   fullFile?: boolean;
   /** Read from end of file instead of start. Default: false */
@@ -30,6 +32,9 @@ const MAX_LINES = 500;
 // Maximum file size to read entirely (50KB)
 const MAX_FULL_FILE_SIZE = 50 * 1024;
 
+// Maximum characters in output (to prevent truncation)
+const MAX_OUTPUT_CHARS = 30000;
+
 export function createReadFileTool(
   rootHandle: FileSystemDirectoryHandle
 ): Tool {
@@ -42,11 +47,20 @@ IMPORTANT: This tool automatically extracts and reports:
 - Column headers for CSV/TSV files (critical for code writing!)
 - JSON structure and key names (critical for code writing!)
 - Delimiter used in delimited files
+- Total line count in the file
 
 Options:
 - lines: Number of lines to read (default: 30, max: 500)
+- offset: Start reading from this line number (0-indexed, default: 0)
 - fullFile: Read entire file if small enough (<50KB)
-- fromEnd: Read last N lines instead of first N
+- fromEnd: Read last N lines instead of first N (cannot be used with offset)
+
+OUTPUT LIMIT: Results are limited to 30,000 characters. If this limit is exceeded, you'll get an error telling you to reduce the line count or use offset to read in smaller chunks.
+
+CHUNKING LARGE FILES: For large files, read in chunks using offset:
+- First chunk: {lines: 100, offset: 0}
+- Next chunk: {lines: 100, offset: 100}
+- And so on...
 
 For JSON files, 30 lines usually shows the schema. For CSVs, shows header + sample rows.
 Binary files cannot be read - use get_file_info instead.`,
@@ -61,19 +75,31 @@ Binary files cannot be read - use get_file_info instead.`,
           type: 'number',
           description: 'Number of lines to read. Default: 30, max: 500.',
         },
+        offset: {
+          type: 'number',
+          description: 'Start reading from this line number (0-indexed). Use for reading large files in chunks.',
+        },
         fullFile: {
           type: 'boolean',
           description: 'Read entire file if under 50KB. Use sparingly.',
         },
         fromEnd: {
           type: 'boolean',
-          description: 'Read from end of file instead of start.',
+          description: 'Read from end of file instead of start. Cannot be used with offset.',
         },
       },
       required: ['path'],
     },
     execute: async (input: unknown): Promise<ToolResult> => {
-      const { path, lines, fullFile, fromEnd } = input as ReadFileInput;
+      const { path, lines, fullFile, fromEnd, offset } = input as ReadFileInput;
+
+      // Validate: cannot use both offset and fromEnd
+      if (offset !== undefined && fromEnd) {
+        return {
+          success: false,
+          output: 'Error: Cannot use both "offset" and "fromEnd" parameters together. Use offset for chunked reading OR fromEnd for reading from the end.',
+        };
+      }
 
       try {
         // Check if it's a binary file
@@ -92,12 +118,24 @@ Binary files cannot be read - use get_file_info instead.`,
         // Determine read strategy
         const readFullFile = fullFile && info.size <= MAX_FULL_FILE_SIZE;
         const lineCount = Math.min(lines || DEFAULT_LINES, MAX_LINES);
+        const lineOffset = offset || 0;
+
+        // Calculate bytes needed
+        let maxBytes: number | undefined;
+        if (!readFullFile) {
+          if (fromEnd) {
+            // For fromEnd, read the whole file or up to 500KB (need to reach the end)
+            maxBytes = Math.min(info.size, 500 * 1024);
+          } else {
+            // For offset/start, estimate bytes needed
+            const estimatedBytesPerLine = 200;
+            const totalLinesNeeded = lineOffset + lineCount;
+            maxBytes = totalLinesNeeded * estimatedBytesPerLine;
+          }
+        }
 
         // Read the file content
-        const fullContent = await readFileAsText(rootHandle, path, {
-          // Only limit bytes if not reading full file
-          maxBytes: readFullFile ? undefined : lineCount * 200, // ~200 chars per line estimate
-        });
+        const fullContent = await readFileAsText(rootHandle, path, { maxBytes });
 
         let output: string;
         let linesRead: number;
@@ -115,34 +153,79 @@ Binary files cannot be read - use get_file_info instead.`,
           const totalLines = allLines.length;
 
           let selectedLines: string[];
+          let startLine: number;
+          let endLine: number;
+
           if (fromEnd) {
+            // Read from end
             selectedLines = allLines.slice(-lineCount);
+            startLine = Math.max(0, totalLines - lineCount);
+            endLine = totalLines;
+          } else if (lineOffset > 0) {
+            // Read from offset
+            startLine = lineOffset;
+            endLine = Math.min(lineOffset + lineCount, totalLines);
+
+            // Check if we have enough lines
+            if (lineOffset >= totalLines) {
+              return {
+                success: false,
+                output: `Error: Offset ${lineOffset} exceeds total lines in file (${totalLines} lines). File has ${totalLines} total lines. Try a smaller offset.`,
+              };
+            }
+
+            selectedLines = allLines.slice(startLine, endLine);
           } else {
-            selectedLines = allLines.slice(0, lineCount);
+            // Read from start
+            startLine = 0;
+            endLine = Math.min(lineCount, totalLines);
+            selectedLines = allLines.slice(0, endLine);
           }
 
           linesRead = selectedLines.length;
           truncated = totalLines > lineCount;
           output = selectedLines.join('\n');
 
-          // Add truncation notice
-          if (truncated) {
+          // Add truncation/range notice
+          if (lineOffset > 0 || fromEnd) {
+            output += `\n\n[Showing lines ${startLine}-${endLine - 1} of ${totalLines} total lines]`;
+          } else if (truncated) {
             const remaining = totalLines - lineCount;
-            const position = fromEnd ? 'first' : 'remaining';
-            output += `\n\n[... ${remaining} ${position} lines not shown. File has ${totalLines} total lines.]`;
+            output += `\n\n[... ${remaining} remaining lines not shown. File has ${totalLines} total lines.]`;
           }
         }
 
         // Extract format information for code writer
         const formatInfo = extractFormatInfo(path, output, allLines);
 
+        // Check 30K character limit
+        if (output.length > MAX_OUTPUT_CHARS) {
+          const totalLines = allLines.length;
+          const suggestedLines = Math.floor((lineCount * MAX_OUTPUT_CHARS) / output.length);
+          return {
+            success: false,
+            output: `Error: Output exceeds 30,000 character limit (${output.length.toLocaleString()} chars).
+
+File has ${totalLines} total lines. You requested ${lineCount} lines${lineOffset > 0 ? ` starting at line ${lineOffset}` : ''}.
+
+SOLUTIONS:
+1. Reduce line count: Try reading ${suggestedLines} lines instead of ${lineCount}
+2. Use chunking: Read file in smaller chunks using the offset parameter
+   Example: {path: "${path}", lines: ${suggestedLines}, offset: ${lineOffset}}
+   Then: {path: "${path}", lines: ${suggestedLines}, offset: ${lineOffset + suggestedLines}}
+
+For time-series data, consider using fromEnd: true to get the most recent data.`,
+          };
+        }
+
         // Build result header with format information
+        const totalLines = allLines.length;
         const headerParts = [
           `File: ${path}`,
           `Type: ${formatInfo.fileType}`,
           `Size: ${formatBytes(info.size)}`,
-          `Lines shown: ${linesRead}${truncated ? ` (of ~${Math.ceil(info.size / 50)})` : ''}`,
-          fromEnd ? '(reading from end)' : '',
+          `Total lines: ${totalLines}`,
+          `Lines shown: ${linesRead}${lineOffset > 0 ? ` (starting at line ${lineOffset})` : ''}${fromEnd ? ' (from end)' : ''}`,
         ];
 
         if (formatInfo.columns && formatInfo.columns.length > 0) {
@@ -162,6 +245,8 @@ Binary files cannot be read - use get_file_info instead.`,
             content: output,
             info,
             linesRead,
+            totalLines,
+            offset: lineOffset,
             truncated,
             fromEnd: fromEnd || false,
             format: formatInfo,
@@ -272,34 +357,36 @@ export function createSmartReadFileTool(
     ...baseTool,
     name: 'read_file',
     execute: async (input: unknown): Promise<ToolResult> => {
-      const { path, lines, fullFile, fromEnd } = input as ReadFileInput;
+      const { path, lines, fullFile, fromEnd, offset } = input as ReadFileInput;
 
       // Smart defaults based on file extension
       const ext = path.toLowerCase().split('.').pop() || '';
       let smartLines = lines || DEFAULT_LINES;
       let smartFromEnd = fromEnd || false;
 
-      // Adjust based on file type
-      switch (ext) {
-        case 'json':
-          // JSON files: read more to capture nested structure
-          smartLines = lines || 50;
-          break;
-        case 'csv':
-        case 'tsv':
-          // CSV: header + enough rows to see data patterns
-          smartLines = lines || 20;
-          break;
-        case 'log':
-          // Log files: read from end by default
-          smartFromEnd = fromEnd ?? true;
-          smartLines = lines || 50;
-          break;
-        case 'md':
-        case 'txt':
-          // Text files: reasonable amount
-          smartLines = lines || 40;
-          break;
+      // Adjust based on file type (only if not using explicit offset)
+      if (offset === undefined) {
+        switch (ext) {
+          case 'json':
+            // JSON files: read more to capture nested structure
+            smartLines = lines || 50;
+            break;
+          case 'csv':
+          case 'tsv':
+            // CSV: header + enough rows to see data patterns
+            smartLines = lines || 20;
+            break;
+          case 'log':
+            // Log files: read from end by default
+            smartFromEnd = fromEnd ?? true;
+            smartLines = lines || 50;
+            break;
+          case 'md':
+          case 'txt':
+            // Text files: reasonable amount
+            smartLines = lines || 40;
+            break;
+        }
       }
 
       return baseTool.execute({
@@ -307,6 +394,7 @@ export function createSmartReadFileTool(
         lines: smartLines,
         fullFile,
         fromEnd: smartFromEnd,
+        offset,
       });
     },
   };

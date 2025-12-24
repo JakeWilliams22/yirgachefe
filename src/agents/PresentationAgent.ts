@@ -203,6 +203,7 @@ interface PresentationAgentConfig {
   apiKey: string;
   onScreenshot?: (dataUrl: string) => void;
   onCheckpoint?: (data: CheckpointData, iteration: number) => void;
+  additionalGuidance?: string;
 }
 
 export interface PresentationAgent {
@@ -214,7 +215,7 @@ export interface PresentationAgent {
 export function createPresentationAgent(
   config: PresentationAgentConfig
 ): PresentationAgent {
-  const { codeOutput, summary, userName, executor, onScreenshot, apiKey, onCheckpoint } = config;
+  const { codeOutput, summary, userName, executor, onScreenshot, apiKey, onCheckpoint, additionalGuidance } = config;
 
   // Create tools
   const tools = [
@@ -224,7 +225,7 @@ export function createPresentationAgent(
 
   const userNameText = userName ? `The user's name is: ${userName}` : 'User name not available - use generic greetings.';
 
-  const initialPrompt = `${userNameText}
+  let initialPrompt = `${userNameText}
 
 ## Summary of Analysis
 ${summary}
@@ -245,6 +246,10 @@ Remember to:
 8. Screenshot and iterate to polish the design
 
 Start by planning the presentation flow, then write the HTML, execute it, screenshot it, and refine.`;
+
+  if (additionalGuidance) {
+    initialPrompt += `\n\nAdditional guidance: ${additionalGuidance}`;
+  }
 
   const anthropicClient = new AnthropicClient(apiKey);
 

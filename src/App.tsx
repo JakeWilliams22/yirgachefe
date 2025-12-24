@@ -16,14 +16,11 @@ import {
   saveApiKey,
   loadApiKey,
   saveSession,
-  loadSession,
   saveCheckpoint,
-  loadCheckpoint,
   clearSession,
   generateSessionId,
   saveCodeWriterResult,
   loadCodeWriterResult,
-  clearCodeWriterResult,
   saveIterationCheckpoint,
   type AgentCheckpoint,
   type IterationCheckpoint,
@@ -46,11 +43,6 @@ function App() {
   const [stopFn, setStopFn] = useState<(() => void) | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [allConversationHistory, setAllConversationHistory] = useState<Message[]>([]);
-  const [hasResumableSession, setHasResumableSession] = useState(false);
-  const [resumableInfo, setResumableInfo] = useState<{
-    directoryName: string;
-    discoveries: number;
-  } | null>(null);
   const [isPrivacySectionExpanded, setIsPrivacySectionExpanded] = useState(false);
   const [isMotivationSectionExpanded, setIsMotivationSectionExpanded] = useState(true);
 
@@ -71,8 +63,6 @@ function App() {
   // Check for saved state on mount
   useEffect(() => {
     const savedApiKey = loadApiKey();
-    const savedSession = loadSession();
-    const savedCheckpoint = loadCheckpoint();
     const savedCodeWriterResult = loadCodeWriterResult();
 
     if (savedApiKey) {
@@ -80,21 +70,9 @@ function App() {
       setStep('directory');
     }
 
-    // Check if we have a resumable session
-    // Priority: code writer result (presentation phase) > checkpoint (exploration phase)
+    // Check if we have saved code writer result for dev testing
     if (savedCodeWriterResult) {
-      setHasResumableSession(true);
-      setResumableInfo({
-        directoryName: savedSession?.directoryName || 'Unknown',
-        discoveries: -1, // Special marker for presentation phase
-      });
       setHasSavedCodeWriterResult(true);
-    } else if (savedSession && savedCheckpoint && savedCheckpoint.status !== 'running') {
-      setHasResumableSession(true);
-      setResumableInfo({
-        directoryName: savedSession.directoryName,
-        discoveries: savedCheckpoint.discoveries.length,
-      });
     }
   }, []);
 
@@ -134,7 +112,7 @@ function App() {
   );
 
   const startPresentation = useCallback(
-    async (codeWriterResult: AgentResult, container: HTMLDivElement) => {
+    async (codeWriterResult: AgentResult, container: HTMLDivElement, additionalGuidance?: string) => {
       if (!apiKey) {
         console.error('No API key available');
         return;
@@ -196,6 +174,7 @@ function App() {
             console.log('Screenshot captured');
             setScreenshot(dataUrl);
           },
+          additionalGuidance,
         });
         console.log('PresentationAgent created');
 
@@ -213,12 +192,20 @@ function App() {
           // Accumulate conversation history
           if (event.type === 'conversation_update') {
             setAllConversationHistory((prev) => {
-              // Only add new messages that aren't already in prev
-              if (prev.length > 0 && event.messages.length > prev.length) {
-                const newMessages = event.messages.slice(prev.length);
-                return [...prev, ...newMessages];
+              // Find where the current agent's messages start (after any phase markers)
+              // by finding the last phase transition marker
+              let agentStartIndex = 0;
+              for (let i = prev.length - 1; i >= 0; i--) {
+                if (prev[i].role === 'user' &&
+                    typeof prev[i].content === 'string' &&
+                    (prev[i].content as string).includes('PHASE TRANSITION:')) {
+                  agentStartIndex = i + 1;
+                  break;
+                }
               }
-              return event.messages;
+
+              // Replace messages from agent start onwards with fresh agent messages
+              return [...prev.slice(0, agentStartIndex), ...event.messages];
             });
           }
 
@@ -289,7 +276,8 @@ function App() {
   const startCodeWriting = useCallback(
     async (
       handle: FileSystemDirectoryHandle,
-      explorationResult: AgentResult
+      explorationResult: AgentResult,
+      additionalGuidance?: string
     ) => {
       if (!apiKey) return;
 
@@ -310,6 +298,7 @@ function App() {
         discoveries: explorationResult.discoveries,
         apiKey,
         onCheckpoint: handleCheckpoint,
+        additionalGuidance,
       });
 
       // Store stop function
@@ -325,12 +314,20 @@ function App() {
         // Accumulate conversation history
         if (event.type === 'conversation_update') {
           setAllConversationHistory((prev) => {
-            // Only add new messages that aren't already in prev
-            if (prev.length > 0 && event.messages.length > prev.length) {
-              const newMessages = event.messages.slice(prev.length);
-              return [...prev, ...newMessages];
+            // Find where the current agent's messages start (after any phase markers)
+            // by finding the last phase transition marker
+            let agentStartIndex = 0;
+            for (let i = prev.length - 1; i >= 0; i--) {
+              if (prev[i].role === 'user' &&
+                  typeof prev[i].content === 'string' &&
+                  (prev[i].content as string).includes('PHASE TRANSITION:')) {
+                agentStartIndex = i + 1;
+                break;
+              }
             }
-            return event.messages;
+
+            // Replace messages from agent start onwards with fresh agent messages
+            return [...prev.slice(0, agentStartIndex), ...event.messages];
           });
         }
 
@@ -401,7 +398,8 @@ function App() {
   const startExploration = useCallback(
     async (
       handle: FileSystemDirectoryHandle,
-      resumeFrom?: CheckpointData
+      resumeFrom?: CheckpointData,
+      additionalGuidance?: string
     ) => {
       if (!apiKey) return;
 
@@ -428,6 +426,7 @@ function App() {
         apiKey,
         onCheckpoint: handleCheckpoint,
         resumeFrom,
+        additionalGuidance,
       });
 
       // Store stop function
@@ -494,8 +493,6 @@ function App() {
       setCodeWritingResult(null);
       setPresentationResult(null);
       setAllConversationHistory([]); // Clear conversation history for new session
-      setHasResumableSession(false);
-      setResumableInfo(null);
 
       // Track process start
       window.umami?.track('process-started', { directoryName: handle.name });
@@ -539,59 +536,6 @@ function App() {
     presentationStartedRef.current = false;
   }, []);
 
-  const handleResume = useCallback(async () => {
-    if (!apiKey) return;
-
-    const savedCodeWriterResult = loadCodeWriterResult();
-    const checkpoint = loadCheckpoint();
-
-    // If we have a saved code writer result, resume from presentation phase
-    if (savedCodeWriterResult) {
-      console.log('Resuming from presentation phase with saved code writer result');
-      setHasResumableSession(false);
-      setResumableInfo(null);
-      handleSkipToPresentation();
-      return;
-    }
-
-    // Otherwise, resume from exploration phase
-    if (!checkpoint) {
-      console.error('No checkpoint found for resume');
-      return;
-    }
-
-    // User needs to re-select the directory (can't persist FileSystemDirectoryHandle)
-    try {
-      const handle = await window.showDirectoryPicker({ mode: 'read' });
-
-      setDirectoryHandle(handle);
-      setStep('exploring');
-      setEvents([]);
-      setResult(null);
-      setHasResumableSession(false);
-      setResumableInfo(null);
-
-      await startExploration(handle, {
-        messages: checkpoint.messages,
-        discoveries: checkpoint.discoveries,
-        tokenUsage: checkpoint.tokenUsage,
-        iteration: checkpoint.iteration,
-      });
-    } catch (error) {
-      if ((error as Error).name !== 'AbortError') {
-        console.error('Error resuming:', error);
-      }
-    }
-  }, [apiKey, startExploration, handleSkipToPresentation]);
-
-  const handleDiscardSession = useCallback(() => {
-    clearSession();
-    clearCodeWriterResult();
-    setHasResumableSession(false);
-    setResumableInfo(null);
-    setHasSavedCodeWriterResult(false);
-  }, []);
-
   const handleStop = useCallback(() => {
     stopFn?.();
     setStopFn(null);
@@ -611,7 +555,7 @@ function App() {
     }
   }, [presentationExecutor]);
 
-  const handleRetryPresentation = useCallback(() => {
+  const handleRetryPresentation = useCallback((providedGuidance?: string) => {
     // Load the saved code writer result
     const savedResult = loadCodeWriterResult();
     if (!savedResult) {
@@ -619,6 +563,11 @@ function App() {
       alert('Cannot retry - no saved insights found. Please run the full pipeline again.');
       return;
     }
+
+    // Prompt for additional guidance if not provided
+    const guidance = providedGuidance !== undefined
+      ? providedGuidance
+      : window.prompt('Optional: Add additional guidance for the presentation (or leave empty):');
 
     console.log('Retrying presentation with saved insights');
 
@@ -646,9 +595,79 @@ function App() {
     setFinalPresentationHtml(null);
     presentationStartedRef.current = false;
 
+    // Store guidance for when presentation container is ready
+    (window as any).__retryPresentationGuidance = guidance || undefined;
+
     // Go back to presenting step
     setStep('presenting');
   }, [presentationExecutor, allConversationHistory]);
+
+  const handleRetryExploration = useCallback(async () => {
+    if (!directoryHandle) {
+      alert('No directory selected');
+      return;
+    }
+
+    // Prompt for additional guidance
+    const guidance = window.prompt('Optional: Add additional guidance for the exploration (or leave empty):');
+
+    // Stop current agent if running
+    if (stopFn) {
+      stopFn();
+      setStopFn(null);
+    }
+
+    // Reset state
+    setEvents([]);
+    setResult(null);
+    setExplorationResult(null);
+    setCodeWritingResult(null);
+    setPresentationResult(null);
+    setAllConversationHistory([]);
+
+    // Restart exploration
+    await startExploration(directoryHandle, undefined, guidance || undefined);
+  }, [directoryHandle, stopFn, startExploration]);
+
+  const handleRetryCodeWriting = useCallback(async () => {
+    if (!directoryHandle || !explorationResult) {
+      alert('Cannot retry - missing exploration data');
+      return;
+    }
+
+    // Prompt for additional guidance
+    const guidance = window.prompt('Optional: Add additional guidance for code writing (or leave empty):');
+
+    // Stop current agent if running
+    if (stopFn) {
+      stopFn();
+      setStopFn(null);
+    }
+
+    // Reset code writing state but keep exploration
+    const codeWritingStartIndex = allConversationHistory.findIndex(
+      (msg) => msg.role === 'user' &&
+      typeof msg.content === 'string' &&
+      msg.content.includes('CODE WRITING AGENT')
+    );
+
+    if (codeWritingStartIndex !== -1) {
+      setAllConversationHistory((prev) => prev.slice(0, codeWritingStartIndex));
+    }
+
+    setEvents([]);
+    setResult(explorationResult);
+    setCodeWritingResult(null);
+    setPresentationResult(null);
+
+    // Go back to code writing step
+    setStep('writing-code');
+
+    // Start code writing with guidance
+    setTimeout(() => {
+      startCodeWriting(directoryHandle, explorationResult, guidance || undefined);
+    }, 100);
+  }, [directoryHandle, explorationResult, stopFn, startCodeWriting, allConversationHistory]);
 
   // Handle editing a message in the conversation history
   const handleMessageEdit = useCallback((index: number, newMessage: Message) => {
@@ -682,32 +701,6 @@ function App() {
     }
   }, [sessionId, allConversationHistory, result, step]);
 
-  // Handle resuming from a specific checkpoint
-  const handleResumeFromCheckpoint = useCallback(async (checkpoint: IterationCheckpoint) => {
-    console.log('Resuming from checkpoint iteration:', checkpoint.iteration);
-
-    // Stop any currently running agent
-    if (stopFn) {
-      console.log('Stopping current agent...');
-      stopFn();
-      setStopFn(null);
-    }
-
-    // Restore conversation history from checkpoint
-    setAllConversationHistory(checkpoint.messages);
-    setEvents([]);
-    setResult(null);
-
-    // For now, we'll need the user to restart the agent manually with the edited state
-    // A full implementation would call agent.resumeFromIteration() here
-    // But that requires knowing which agent was running and having access to directory handle
-
-    alert('Checkpoint loaded. The conversation has been restored to iteration ' + checkpoint.iteration +
-          '. You can now review the messages or continue manually.');
-
-    // TODO: Implement full resume functionality with AgentRunner.resumeFromIteration()
-  }, [stopFn]);
-
   // Compute cumulative state from all agent phases
   const cumulativeTokenUsage = {
     input:
@@ -739,7 +732,7 @@ function App() {
         <h1>
           yirgachefe ☕
         </h1>
-        <p>Create personalized year-end summaries from your exported data</p>
+        <p>Create a personalized year-in-review for any exported data</p>
         <p>Note: This is an experimental project. Data exports often contain sensitive data. Use at your own risk. Expand the privacy section for more information. </p>
       </header>
 
@@ -756,7 +749,7 @@ function App() {
           <div className="privacy-content">
           <h3>Disclaimer</h3>
           <p>
-            <strong>This app is provided "as is" without any warranties. By using this app, you acknowledge that you do so at your own risk. The creator is not responsible for any damages, data loss, or other issues that may result from using this application.</strong>
+            <strong>This app is provided "as is" without any warranties. By using this app, you acknowledge that you do so at your own risk. The creator is not responsible for any damages, data compromises, or other issues that may result from using this application.</strong>
           </p>
           <h3>How Your Data is Handled</h3>
           <p>
@@ -793,10 +786,10 @@ function App() {
             {/* Content placeholder - user will fill this in */}
             <h3>Motivation</h3>
             <p>
-              Like it or not &mdash; every second you spend online is tracked.
+              Every second we spend online is tracked.
             </p>
             <p>
-              For 11 months of the year, we can use this data for its true purpose: generating revenue. But December is a time to use that data for a brief moment of delight—a glimpse into our soul—or to make sure your friends know your #1 artist is someone niche (you're not that mainstream).
+              For 11 months of the year, we use this data for its true purpose (generating revenue). But December is a time to use that data for a brief moment of delight. A glimpse into our soul. To make sure our friends know your #1 artist is someone niche (you're not that mainstream).
 
               <br /><br />
 
@@ -809,7 +802,7 @@ function App() {
             <h3>How it works</h3>
             <ol>
               <li>
-                Request an export of your data from your trusty {`{MusicStreamingService|FitnessTracker|TerminalHistory|BookReadingSocialMedia}`}
+                Request an export of your data from your trusty {`{MusicStreamingService|FitnessTracker|ShellTerminal|BookReadingSocialMedia}`}
               </li>
               <li>
                 Wait <code>n</code> hours to receive your data
@@ -836,38 +829,7 @@ function App() {
 
         {step === 'directory' && (
           <>
-            {hasResumableSession && resumableInfo && (
-              <div className="resume-banner">
-                <div className="resume-info">
-                  <span className="resume-icon">💾</span>
-                  <div>
-                    <strong>Previous session found</strong>
-                    <p>
-                      {resumableInfo.discoveries === -1 ? (
-                        <>Resume from presentation phase</>
-                      ) : (
-                        <>
-                          Folder: {resumableInfo.directoryName} •{' '}
-                          {resumableInfo.discoveries} discoveries
-                        </>
-                      )}
-                    </p>
-                  </div>
-                </div>
-                <div className="resume-actions">
-                  <button className="resume-button" onClick={handleResume}>
-                    Resume
-                  </button>
-                  <button
-                    className="discard-button"
-                    onClick={handleDiscardSession}
-                  >
-                    Discard
-                  </button>
-                </div>
-              </div>
-            )}
-            {hasSavedCodeWriterResult && !hasResumableSession && (
+            {hasSavedCodeWriterResult && (
               <div className="resume-banner" style={{ marginBottom: '1rem' }}>
                 <div className="resume-info">
                   <span className="resume-icon">🎨</span>
@@ -893,14 +855,24 @@ function App() {
           <>
             <div className="exploration-header">
               <h2>{directoryHandle?.name || 'Unknown folder'}</h2>
+              {step === 'exploring' && explorationResult && (
+                <button className="secondary-button" onClick={() => handleRetryExploration()}>
+                  🔄 Retry Exploration
+                </button>
+              )}
+              {step === 'writing-code' && codeWritingResult && (
+                <button className="secondary-button" onClick={() => handleRetryCodeWriting()}>
+                  🔄 Retry Code Writing
+                </button>
+              )}
               {step === 'presenting' && (
-                <button className="secondary-button" onClick={handleRetryPresentation}>
+                <button className="secondary-button" onClick={() => handleRetryPresentation()}>
                   🔄 Retry Presentation
                 </button>
               )}
               {step === 'results' && (
                 <div style={{ display: 'flex', gap: '10px' }}>
-                  <button className="secondary-button" onClick={handleRetryPresentation}>
+                  <button className="secondary-button" onClick={() => handleRetryPresentation()}>
                     🔄 Retry Presentation
                   </button>
                   <button className="secondary-button" onClick={handleReset}>
@@ -920,9 +892,7 @@ function App() {
                 result={displayResult}
                 onStop={handleStop}
                 insights={insights}
-                sessionId={sessionId || undefined}
                 allMessages={allConversationHistory}
-                onResumeFromCheckpoint={handleResumeFromCheckpoint}
                 onMessageEdit={handleMessageEdit}
                 explorationResult={explorationResult}
                 codeWritingResult={codeWritingResult}
@@ -939,7 +909,9 @@ function App() {
                   onContainerReady={(container) => {
                     // Start presentation agent when container is ready
                     if (result) {
-                      startPresentation(result, container);
+                      const guidance = (window as any).__retryPresentationGuidance;
+                      delete (window as any).__retryPresentationGuidance;
+                      startPresentation(result, container, guidance);
                     }
                   }}
                 />
@@ -948,9 +920,7 @@ function App() {
                   result={displayResult}
                   onStop={handleStop}
                   insights={insights}
-                  sessionId={sessionId || undefined}
                   allMessages={allConversationHistory}
-                  onResumeFromCheckpoint={handleResumeFromCheckpoint}
                   onMessageEdit={handleMessageEdit}
                   explorationResult={explorationResult}
                   codeWritingResult={codeWritingResult}
@@ -981,9 +951,7 @@ function App() {
                   events={events}
                   result={displayResult}
                   insights={insights}
-                  sessionId={sessionId || undefined}
                   allMessages={allConversationHistory}
-                  onResumeFromCheckpoint={handleResumeFromCheckpoint}
                   onMessageEdit={handleMessageEdit}
                   explorationResult={explorationResult}
                   codeWritingResult={codeWritingResult}
@@ -997,7 +965,7 @@ function App() {
 
       <footer className="app-footer">
         <p>
-          Your data never leaves your browser. All processing happens locally.
+          atl | <a style={{  textDecoration: 'underline' }} href="https://www.linkedin.com/in/who-is-jake-williams/">me</a>
           {sessionId && <span className="session-id"> Session: {sessionId.slice(-8)}</span>}
         </p>
       </footer>

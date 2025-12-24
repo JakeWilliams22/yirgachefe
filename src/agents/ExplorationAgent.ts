@@ -82,6 +82,8 @@ export interface ExplorationAgentOptions {
   onCheckpoint?: (data: CheckpointData, iteration: number) => void;
   /** Checkpoint to resume from */
   resumeFrom?: CheckpointData;
+  /** Additional guidance for the exploration */
+  additionalGuidance?: string;
 }
 
 export interface ExplorationAgent {
@@ -103,6 +105,7 @@ export function createExplorationAgent(
     maxIterations = 30,
     onCheckpoint,
     resumeFrom,
+    additionalGuidance,
   } = options;
 
   const client = new AnthropicClient(apiKey, model);
@@ -126,9 +129,11 @@ export function createExplorationAgent(
       if (resumeFrom) {
         return runner.resume(resumeFrom);
       }
-      return runner.run(
-        'Please explore this directory and help me understand what data is available. I want to create a "Year in Review" summary from this exported data.'
-      );
+      const baseMessage = 'Please explore this directory and help me understand what data is available. I want to create a "Year in Review" summary from this exported data.';
+      const message = additionalGuidance
+        ? `${baseMessage}\n\nAdditional guidance: ${additionalGuidance}`
+        : baseMessage;
+      return runner.run(message);
     },
     stop: () => runner.stop(),
     on: (listener) => runner.on(listener),

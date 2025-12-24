@@ -54,8 +54,7 @@ export function DirectoryPicker({ onDirectorySelected }: DirectoryPickerProps) {
     <div className="directory-picker">
       <h2>Select Your Data Export Folder</h2>
       <p>
-        Choose the folder containing your exported data (e.g., Spotify data export,
-        Strava export, etc.). We'll explore it to understand what data is available.
+        Choose the folder containing your exported data. We'll explore it, analyze it, and tell you about how great/terrible you were this year.
       </p>
 
       <button

@@ -393,6 +393,7 @@ export interface CodeWriterAgentOptions {
   maxIterations?: number;
   onCheckpoint?: (data: CheckpointData, iteration: number) => void;
   resumeFrom?: CheckpointData;
+  additionalGuidance?: string;
 }
 
 export interface CodeWriterAgent {
@@ -534,6 +535,7 @@ export function createCodeWriterAgent(
     maxIterations = 25,
     onCheckpoint,
     resumeFrom,
+    additionalGuidance,
   } = options;
 
   const client = new AnthropicClient(apiKey, model);
@@ -541,7 +543,7 @@ export function createCodeWriterAgent(
 
   // Build initial prompt with discoveries
   const discoveriesSummary = formatDiscoveries(discoveries);
-  const initialPrompt = `Based on the exploration findings below, write JavaScript code to analyze this data and generate interesting insights for a "Year in Review" summary.
+  let initialPrompt = `Based on the exploration findings below, write JavaScript code to analyze this data and generate interesting insights for a "Year in Review" summary.
 
 ${discoveriesSummary}
 
@@ -552,6 +554,10 @@ Please:
 4. Return an array of insight objects in the specified format
 
 Start by reading one of the key data files to see its actual structure!`;
+
+  if (additionalGuidance) {
+    initialPrompt += `\n\nAdditional guidance: ${additionalGuidance}`;
+  }
 
   const config: AgentConfig = {
     name: 'CodeWriterAgent',
