@@ -24,6 +24,7 @@ export function PresentationView({
 }: PresentationViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [showScreenshot, setShowScreenshot] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const hasCalledReadyRef = useRef(false);
 
   useEffect(() => {
@@ -63,6 +64,12 @@ export function PresentationView({
     }
   };
 
+  const handleShare = () => {
+    // Track share button click
+    window.umami?.track('share-button-clicked');
+    setShowShareModal(true);
+  };
+
   return (
     <div className="presentation-view">
       <div className="presentation-header">
@@ -91,6 +98,13 @@ export function PresentationView({
                   title="Open in new tab"
                 >
                   🗗 Open in New Tab
+                </button>
+                <button
+                  className="action-button"
+                  onClick={handleShare}
+                  title="Share your presentation"
+                >
+                  🔗 Share
                 </button>
                 <button
                   className="action-button"
@@ -129,6 +143,45 @@ export function PresentationView({
           </div>
         )}
       </div>
+
+      {/* Share Modal */}
+      {showShareModal && (
+        <div className="share-modal-overlay" onClick={() => setShowShareModal(false)}>
+          <div className="share-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="share-modal-header">
+              <h3>Share Your Presentation</h3>
+              <button
+                className="share-modal-close"
+                onClick={() => setShowShareModal(false)}
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+            <div className="share-modal-content">
+              <p className="share-modal-message">
+                This is an indie app with no backend OK I didn't have time to implement it. But I do know how many people click this button so maybe it'll come soon
+              </p>
+              <div className="share-modal-instructions">
+                <h4>How to share:</h4>
+                <ol>
+                  <li>Click <strong>"Download"</strong> to get the HTML file</li>
+                  <li>Host it on your favorite static hosting service: GitHub Pages, Cloudflare Pages, Vercel, or your home server</li>
+                  <li>Share!</li>
+                </ol>
+              </div>
+            </div>
+            <div className="share-modal-footer">
+              <button
+                className="share-modal-button"
+                onClick={() => setShowShareModal(false)}
+              >
+                Got it!
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

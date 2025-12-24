@@ -127,10 +127,17 @@ Binary files cannot be read - use get_file_info instead.`,
             // For fromEnd, read the whole file or up to 500KB (need to reach the end)
             maxBytes = Math.min(info.size, 500 * 1024);
           } else {
-            // For offset/start, estimate bytes needed
+            // For offset/start, estimate bytes needed with minimum chunk size
             const estimatedBytesPerLine = 200;
             const totalLinesNeeded = lineOffset + lineCount;
-            maxBytes = totalLinesNeeded * estimatedBytesPerLine;
+            const estimatedBytes = totalLinesNeeded * estimatedBytesPerLine;
+
+            // Always read at least 50KB to ensure we get enough lines (CSV rows can be long)
+            const minChunkSize = 50 * 1024;
+            maxBytes = Math.max(estimatedBytes, minChunkSize);
+
+            // But don't exceed file size or 500KB
+            maxBytes = Math.min(maxBytes, info.size, 500 * 1024);
           }
         }
 
@@ -151,6 +158,24 @@ Binary files cannot be read - use get_file_info instead.`,
         } else {
           // Take requested amount
           const totalLines = allLines.length;
+
+          // Check if we have enough lines for the request
+          if (!fromEnd && lineOffset === 0 && totalLines < lineCount && info.size > maxBytes!) {
+            // We hit the read limit but don't have enough lines
+            return {
+              success: false,
+              output: `Error: Only read ${totalLines} lines from file, but you requested ${lineCount} lines.
+
+File is ${formatBytes(info.size)} but we only read ${formatBytes(maxBytes!)} to stay within limits.
+
+SOLUTIONS:
+1. Reduce line count: Request ${totalLines} or fewer lines
+2. Use fromEnd: true to read from the end of the file (reads more to reach the end)
+3. The file may have very long lines. Try requesting fewer lines.
+
+File has at least ${totalLines} lines (possibly more).`,
+            };
+          }
 
           let selectedLines: string[];
           let startLine: number;
