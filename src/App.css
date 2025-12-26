@@ -816,3 +816,203 @@ body {
   font-size: 0.8125rem;
   color: var(--color-text-muted);
 }
+
+/* ===================================
+   Mobile Responsive Media Queries
+   =================================== */
+
+/* Tablet Breakpoint (max-width: 768px) */
+@media (max-width: 768px) {
+  /* Container adjustments */
+  .app {
+    padding: 2rem 1.5rem;
+  }
+
+  .app.presentation-mode {
+    padding: 0.75rem 1rem;
+  }
+
+  /* Header typography - CRITICAL */
+  .app-header h1 {
+    font-size: 2rem;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .header-accent {
+    font-size: 1.5rem;
+  }
+
+  .app-header p {
+    font-size: 0.95rem;
+  }
+
+  /* Privacy/Motivation sections */
+  .privacy-toggle {
+    padding: 0.875rem 1rem;
+    font-size: 0.95rem;
+  }
+
+  .privacy-content {
+    padding: 0 1rem 1rem 1rem;
+    font-size: 0.9rem;
+  }
+
+  /* Resume banner - make vertical */
+  .resume-banner {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  .resume-actions {
+    width: 100%;
+  }
+
+  .resume-button,
+  .discard-button {
+    width: 100%;
+  }
+
+  /* API Key Input - stack form elements */
+  .api-key-input {
+    padding: 2rem 1.5rem;
+  }
+
+  .api-key-input .input-group {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .api-key-input button {
+    width: 100%;
+  }
+
+  /* Directory Picker */
+  .directory-picker {
+    padding: 2rem 1.5rem;
+  }
+
+  /* Exploration header - stack buttons */
+  .exploration-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  /* Agent phase sections */
+  .phase-header {
+    font-size: 1rem;
+    padding: 0.875rem;
+  }
+
+  /* Status bar */
+  .status-bar {
+    padding: 0.875rem 1rem;
+    font-size: 0.9rem;
+  }
+
+  /* Footer */
+  .app-footer {
+    font-size: 0.8rem;
+    padding: 1rem 0;
+  }
+}
+
+/* Phone Breakpoint (max-width: 480px) */
+@media (max-width: 480px) {
+  /* Container - minimum padding */
+  .app {
+    padding: 1.5rem 1rem;
+  }
+
+  .app.presentation-mode {
+    padding: 0.5rem 0.75rem;
+  }
+
+  /* Header - aggressive scaling */
+  .app-header {
+    margin-bottom: 2rem;
+  }
+
+  .app-header h1 {
+    font-size: 1.75rem;
+  }
+
+  .header-accent {
+    font-size: 1.25rem;
+  }
+
+  .app-header p {
+    font-size: 0.875rem;
+  }
+
+  /* Sections - minimal spacing */
+  .privacy-section {
+    margin-bottom: 1.5rem;
+  }
+
+  .privacy-toggle {
+    padding: 0.75rem 0.875rem;
+    font-size: 0.9rem;
+  }
+
+  .privacy-content {
+    font-size: 0.85rem;
+  }
+
+  /* Resume banner - compact */
+  .resume-banner {
+    padding: 0.875rem 1rem;
+  }
+
+  .resume-info {
+    font-size: 0.9rem;
+  }
+
+  /* Forms - full width, larger touch targets */
+  .api-key-input input,
+  .api-key-input button {
+    padding: 0.875rem 1rem;
+    font-size: 1rem;
+  }
+
+  /* Buttons - ensure 44px touch targets */
+  .secondary-button,
+  .resume-button,
+  .discard-button {
+    padding: 0.75rem 1rem;
+    min-height: 44px;
+  }
+
+  /* Phase header - compact */
+  .phase-header {
+    font-size: 0.95rem;
+    padding: 0.75rem;
+  }
+
+  /* Activity/discovery items */
+  .activity-item,
+  .discovery-item {
+    font-size: 0.75rem;
+    padding: 0.375rem;
+  }
+}
+
+/* Touch Device Enhancements */
+@media (pointer: coarse) {
+  /* Increase touch targets globally */
+  .privacy-toggle,
+  .secondary-button,
+  .resume-button,
+  .discard-button,
+  .stop-button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .section-header {
+    padding: 0.5rem;
+  }
+}

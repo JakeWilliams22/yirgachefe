@@ -363,3 +363,84 @@
   color: #3E2723;
   text-shadow: 0 0 2px white;
 }
+
+/* Tablet Breakpoint (max-width: 768px) */
+@media (max-width: 768px) {
+  .insights-view h3 {
+    font-size: 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+
+  /* Grid - reduce minimum card width */
+  .insights-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.25rem;
+  }
+
+  .insight-card {
+    padding: 1.25rem;
+  }
+
+  /* Statistics - scale down large numbers */
+  .statistic-number {
+    font-size: 2rem;
+  }
+
+  .achievement-badge {
+    font-size: 2.5rem;
+  }
+}
+
+/* Phone Breakpoint (max-width: 480px) */
+@media (max-width: 480px) {
+  .insights-view {
+    margin-top: 1.5rem;
+  }
+
+  .insights-view h3 {
+    font-size: 1.125rem;
+    margin-bottom: 1rem;
+  }
+
+  /* Grid - FORCE single column */
+  .insights-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .insight-card {
+    padding: 1rem;
+  }
+
+  .insight-title {
+    font-size: 1rem;
+  }
+
+  /* Statistics - further reduction */
+  .statistic-number {
+    font-size: 1.75rem;
+  }
+
+  .statistic-label {
+    font-size: 0.9rem;
+  }
+
+  .achievement-badge {
+    font-size: 2rem;
+  }
+
+  /* Comparison - stack vertically */
+  .comparison-row {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .comparison-number {
+    font-size: 1.5rem;
+  }
+
+  /* Timeline - adjust height */
+  .timeline-display {
+    max-height: 250px;
+  }
+}

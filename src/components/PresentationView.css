@@ -552,4 +552,115 @@
   .share-option-header h4 {
     font-size: 15px;
   }
+
+  /* FIX: Adjust presentation container height for tablet */
+  .presentation-container {
+    height: calc(100vh - 200px);
+    min-height: 500px;
+  }
+
+  /* Controls - ensure visibility */
+  .presentation-controls {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .action-button,
+  .screenshot-toggle {
+    flex: 1;
+    min-width: 140px;
+    justify-content: center;
+  }
+
+  /* Watermark - adjust for smaller screen */
+  .presentation-watermark {
+    font-size: 12px;
+    padding: 4px 8px;
+    bottom: 10px;
+    right: 10px;
+  }
+}
+
+/* Phone Breakpoint (max-width: 480px) */
+@media (max-width: 480px) {
+  /* Header - stack completely */
+  .presentation-header {
+    padding: 0 12px;
+  }
+
+  .presentation-header h3 {
+    font-size: 18px;
+  }
+
+  .presentation-status {
+    font-size: 13px;
+  }
+
+  /* Controls - full width buttons */
+  .presentation-controls {
+    width: 100%;
+  }
+
+  .action-button,
+  .screenshot-toggle {
+    min-width: auto;
+    min-height: 44px;
+  }
+
+  /* Container - maximize viewport on mobile */
+  .presentation-container {
+    height: 80vh;
+    min-height: 400px;
+    border-radius: 8px;
+  }
+
+  .presentation-watermark {
+    font-size: 11px;
+    padding: 3px 6px;
+  }
+
+  /* Share modal - FULL SCREEN on phone */
+  .share-modal {
+    max-width: 100%;
+    width: 100%;
+    max-height: 100vh;
+    height: 100vh;
+    border-radius: 0;
+    margin: 0;
+  }
+
+  .share-modal-overlay {
+    padding: 0;
+  }
+
+  .share-modal-header {
+    padding: 14px 16px;
+  }
+
+  .share-modal-header h3 {
+    font-size: 18px;
+  }
+
+  .share-modal-content {
+    padding: 16px;
+    font-size: 14px;
+    overflow-y: auto;
+  }
+
+  .share-modal-instructions {
+    padding: 12px;
+  }
+
+  .share-modal-instructions li {
+    font-size: 13px;
+  }
+
+  .share-url-input {
+    font-size: 12px;
+    padding: 8px 10px;
+  }
+
+  .share-option {
+    padding: 12px;
+  }
 }

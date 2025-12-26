@@ -162,3 +162,31 @@
     font-size: 0.85rem;
   }
 }
+
+/* Phone Breakpoint (max-width: 480px) */
+@media (max-width: 480px) {
+  .phase-indicator {
+    padding: 1.25rem 0.75rem;
+  }
+
+  .phase-step {
+    padding: 0.75rem;
+  }
+
+  .phase-icon {
+    font-size: 1.75rem;
+  }
+
+  .phase-label {
+    font-size: 0.8rem;
+  }
+
+  .phase-connector {
+    height: 30px;
+  }
+
+  .phase-pulse {
+    width: 60px;
+    height: 60px;
+  }
+}
