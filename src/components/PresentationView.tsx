@@ -128,6 +128,18 @@ export function PresentationView({
           {/* Iframe will be injected here by PresentationExecutor */}
         </div>
 
+        {/* Watermark overlay */}
+        {!showScreenshot && (
+          <a
+            href="https://yirgachefe.lol"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="presentation-watermark"
+          >
+            yirgachefe.lol
+          </a>
+        )}
+
         {/* Screenshot view for agent iteration */}
         {screenshot && showScreenshot && (
           <div className="screenshot-container">
