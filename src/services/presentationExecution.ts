@@ -46,8 +46,11 @@ export class PresentationExecutor {
       this.iframe.style.border = 'none';
       this.iframe.style.background = '#000';
 
+      // Inject watermark into HTML
+      const watermarkedHtml = this.injectWatermark(html);
+
       // Set HTML content
-      this.iframe.srcdoc = html;
+      this.iframe.srcdoc = watermarkedHtml;
 
       // Append to container
       if (!this.iframeContainer) {
@@ -93,6 +96,51 @@ export class PresentationExecutor {
         timestamp: Date.now(),
       };
     }
+  }
+
+  /**
+   * Inject yirgachefe.lol watermark into HTML content
+   */
+  private injectWatermark(html: string): string {
+    const watermarkHTML = `
+    <a href="https://yirgachefe.lol" target="_blank" rel="noopener noreferrer"
+       style="position: fixed;
+              bottom: 20px;
+              right: 20px;
+              color: rgba(255, 255, 255, 0.4);
+              font-size: 14px;
+              font-weight: 500;
+              text-decoration: none;
+              z-index: 999999;
+              padding: 6px 12px;
+              border-radius: 4px;
+              background: rgba(0, 0, 0, 0.3);
+              backdrop-filter: blur(4px);
+              transition: all 0.2s ease;
+              font-family: system-ui, -apple-system, sans-serif;
+              pointer-events: auto;">
+      yirgachefe.lol
+    </a>
+    <style>
+      a[href="https://yirgachefe.lol"]:hover {
+        color: rgba(255, 255, 255, 0.8) !important;
+        background: rgba(0, 0, 0, 0.5) !important;
+        transform: translateY(-2px);
+      }
+    </style>`;
+
+    // Try to inject before </body> tag
+    if (html.includes('</body>')) {
+      return html.replace('</body>', `${watermarkHTML}</body>`);
+    }
+
+    // Try to inject before </html> tag
+    if (html.includes('</html>')) {
+      return html.replace('</html>', `${watermarkHTML}</html>`);
+    }
+
+    // Otherwise append to end
+    return html + watermarkHTML;
   }
 
   /**
