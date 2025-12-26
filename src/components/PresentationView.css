@@ -318,6 +318,202 @@
   transform: translateY(0);
 }
 
+/* Share Options Layout */
+.share-options {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.share-option {
+  background: #FFF;
+  border: 1px solid #EFEBE9;
+  border-radius: 8px;
+  padding: 16px;
+  transition: all 0.2s;
+}
+
+.share-option:hover {
+  border-color: #E67E22;
+  box-shadow: 0 2px 8px rgba(230, 126, 34, 0.1);
+}
+
+.share-option-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.share-option-header h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #3E2723;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.share-option-badge {
+  background: #E67E22;
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.share-option p {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: #5D4037;
+  line-height: 1.5;
+}
+
+.share-option-button {
+  width: 100%;
+  padding: 10px 16px;
+  background: #E67E22;
+  color: white;
+  border: 1px solid #E67E22;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.share-option-button:hover:not(:disabled) {
+  background: #D35400;
+  border-color: #D35400;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(230, 126, 34, 0.3);
+}
+
+.share-option-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.share-option-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.share-option-button.secondary {
+  background: white;
+  color: #E67E22;
+  border: 2px solid #E67E22;
+}
+
+.share-option-button.secondary:hover:not(:disabled) {
+  background: #FFF5E6;
+  transform: translateY(-1px);
+}
+
+.share-option-warning {
+  background: #FFF3CD;
+  border: 1px solid #FFE69C;
+  border-left: 4px solid #FFC107;
+  color: #856404;
+  padding: 10px;
+  border-radius: 4px;
+  font-size: 13px;
+  margin: 0 0 12px 0;
+  line-height: 1.4;
+}
+
+.share-option-error {
+  background: #F8D7DA;
+  border: 1px solid #F5C6CB;
+  border-left: 4px solid #DC3545;
+  color: #721C24;
+  padding: 10px;
+  border-radius: 4px;
+  font-size: 13px;
+  margin: 0 0 12px 0;
+  line-height: 1.4;
+}
+
+.share-url-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #EFEBE9;
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: 'Monaco', 'Courier New', monospace;
+  background: #FAFAFA;
+  color: #3E2723;
+  margin-bottom: 10px;
+  cursor: text;
+  box-sizing: border-box;
+}
+
+.share-url-input:focus {
+  outline: none;
+  border-color: #E67E22;
+  background: white;
+}
+
+.share-button-group {
+  display: flex;
+  gap: 10px;
+}
+
+.share-button-group button {
+  flex: 1;
+  padding: 10px 16px;
+  background: white;
+  color: #5D4037;
+  border: 1px solid #EFEBE9;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.share-button-group button:hover {
+  background: #FFF5E6;
+  border-color: #E67E22;
+  color: #E67E22;
+  transform: translateY(-1px);
+}
+
+.share-button-group button:active {
+  transform: translateY(0);
+}
+
+.share-error {
+  background: #F8D7DA;
+  border: 1px solid #F5C6CB;
+  border-left: 4px solid #DC3545;
+  color: #721C24;
+  padding: 14px;
+  border-radius: 6px;
+  font-size: 14px;
+  line-height: 1.5;
+  margin-top: 16px;
+}
+
+/* Loading state in modal */
+.share-modal-content .loading-spinner {
+  width: 40px;
+  height: 40px;
+  margin: 40px auto 20px auto;
+  border: 3px solid rgba(230, 126, 34, 0.2);
+  border-top-color: #E67E22;
+}
+
+.share-modal-content > p {
+  text-align: center;
+  margin: 10px 0 40px 0;
+  color: #5D4037;
+  font-size: 15px;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .presentation-header {
@@ -338,5 +534,22 @@
   .share-modal-content,
   .share-modal-footer {
     padding: 16px 20px;
+  }
+
+  .share-button-group {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .share-button-group button {
+    width: 100%;
+  }
+
+  .share-option {
+    padding: 14px;
+  }
+
+  .share-option-header h4 {
+    font-size: 15px;
   }
 }

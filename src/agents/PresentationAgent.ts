@@ -29,6 +29,44 @@ Create a presentation that feels like Spotify Wrapped, Strava Year in Sport, or 
 7. **Pacing** - Auto-advance through slides with good timing (3-5 seconds per slide)
 8. **Finale** - End with a summary "trophy case" of top stats
 
+## Visual Theme Selection (CRITICAL)
+
+**BEFORE writing any code, you MUST select ONE visual theme** based on the user's data personality. Use this theme consistently across ALL slides.
+
+### Available Themes:
+
+1. **Brutalist Bold** - For intense, high-achievement data
+   - Colors: Black (#000), White (#FFF), One accent (red/yellow/cyan)
+   - Backgrounds: Solid colors, stark contrasts, geometric blocks
+   - Typography: Bold, condensed, uppercase
+   - Mood: Raw, powerful, unapologetic
+
+2. **Gradient Mesh** - For diverse, multifaceted data
+   - Colors: 3-4 vibrant hues blending (purples, pinks, blues, oranges)
+   - Backgrounds: Animated radial gradients, blur effects
+   - Typography: Modern sans-serif, medium weight
+   - Mood: Dynamic, fluid, contemporary
+
+3. **Dark Neon** - For evening/night activities, urban data
+   - Colors: Dark base (#0a0a0a), neon accents (cyan, magenta, lime)
+   - Backgrounds: Dark with glowing elements, grid patterns
+   - Typography: Futuristic, tech-inspired
+   - Mood: Electric, energetic, cyberpunk
+
+4. **Paper Texture** - For personal, nostalgic data
+   - Colors: Warm neutrals (cream, tan, brown), subtle accents
+   - Backgrounds: Paper texture, subtle grain, soft shadows
+   - Typography: Serif or handwritten feel
+   - Mood: Warm, tactile, human
+
+5. **Monochrome Elegance** - For sophisticated, minimal data
+   - Colors: Grayscale with single accent color
+   - Backgrounds: Clean, subtle gradients, geometric patterns
+   - Typography: Elegant serif or refined sans
+   - Mood: Sophisticated, timeless, focused
+
+**Once selected, commit to your theme.** Every slide must reinforce it. No mixing themes.
+
 ## Copy Guidelines
 
 Write copy that feels personal and celebratory:
@@ -68,6 +106,118 @@ Create a single HTML file with:
 <script>
   anime({ targets: '.element', translateX: 250 });
 </script>
+\`\`\`
+
+### Icon Libraries (Use Instead of Emoji)
+
+**Phosphor Icons** (playful, modern):
+\`\`\`html
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.0.3/src/regular/style.css">
+<!-- Usage: <i class="ph ph-trophy"></i> -->
+\`\`\`
+
+**Lucide Icons** (clean, consistent):
+\`\`\`html
+<script src="https://unpkg.com/lucide@latest"></script>
+<!-- Usage: <i data-lucide="award"></i> then call lucide.createIcons() -->
+\`\`\`
+
+### Typography
+
+Load interesting fonts via Google Fonts:
+\`\`\`html
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;900&family=Bebas+Neue&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+\`\`\`
+
+**Theme-appropriate fonts:**
+- **Brutalist Bold**: Bebas Neue, Impact, Arial Black
+- **Gradient Mesh**: Inter, Outfit, Space Grotesk
+- **Dark Neon**: Rajdhani, Exo 2, Orbitron
+- **Paper Texture**: Playfair Display, Merriweather, Lora
+- **Monochrome Elegance**: Cormorant Garamond, Crimson Text
+
+## Background Techniques (Avoid Plain Gradients)
+
+Move beyond simple gradients. Choose techniques that match your selected theme:
+
+### Animated Mesh Gradients
+\`\`\`css
+background:
+  radial-gradient(circle at 20% 50%, rgba(255,0,128,0.4) 0%, transparent 50%),
+  radial-gradient(circle at 80% 80%, rgba(0,255,255,0.4) 0%, transparent 50%),
+  radial-gradient(circle at 40% 20%, rgba(255,255,0,0.4) 0%, transparent 50%),
+  #000;
+background-size: 200% 200%;
+animation: meshMove 10s ease infinite;
+
+@keyframes meshMove {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+\`\`\`
+
+### CSS Pattern Backgrounds
+\`\`\`css
+/* Dots */
+background-image: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+background-size: 30px 30px;
+
+/* Grid */
+background-image:
+  linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px),
+  linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);
+background-size: 50px 50px;
+
+/* Diagonal Stripes */
+background: repeating-linear-gradient(45deg, #000, #000 10px, #111 10px, #111 20px);
+\`\`\`
+
+### Texture & Effects
+\`\`\`css
+/* Glass morphism */
+background: rgba(255, 255, 255, 0.1);
+backdrop-filter: blur(10px);
+border: 1px solid rgba(255, 255, 255, 0.2);
+
+/* Blend modes */
+.layer1 {
+  background: linear-gradient(45deg, #ff0080, #ff8c00);
+  mix-blend-mode: screen;
+}
+\`\`\`
+
+## Layout Variations (Not Just Centered Text)
+
+Use diverse layouts to maintain visual interest:
+
+### Split Screen
+\`\`\`css
+.slide {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+}
+\`\`\`
+
+### Corner Focus
+\`\`\`css
+.slide {
+  display: flex;
+  justify-content: flex-start;
+  align-items: flex-start;
+  padding: 80px;
+}
+\`\`\`
+
+### Full-Bleed Number Background
+\`\`\`css
+.big-number {
+  font-size: 40vw;
+  position: absolute;
+  opacity: 0.1;
+  z-index: -1;
+}
 \`\`\`
 
 ### Example Structure
@@ -193,7 +343,19 @@ You will receive an array of insights. Transform them into a stunning, animated 
 5. Auto-advances through the story
 6. Looks professional and polished
 
-Make it feel special. This is the user's year - celebrate it!`;
+## Design Requirements (CRITICAL)
+
+Before executing code, ensure:
+1. **Theme selected** - Pick ONE theme and document your choice
+2. **Diverse backgrounds** - Use patterns, textures, or advanced gradients (not plain single gradients)
+3. **Icons over emoji** - Load icon library from CDN when visual elements are needed
+4. **Layout variety** - At least 2-3 different layout approaches across slides
+5. **Typography** - Load Google Fonts that match your theme
+6. **Visual consistency** - Every slide reinforces the chosen theme
+
+**Your presentations should feel distinctly different based on the user's data.** A marathon runner should get different theming than a casual walker. Nighttime activities should feel different than morning routines.
+
+Make bold choices. Commit to your theme. Make it feel special. This is the user's year - celebrate it!`;
 
 interface PresentationAgentConfig {
   codeOutput: string; // The full output from code execution
@@ -236,16 +398,20 @@ ${codeOutput}
 Create an animated, celebratory year-in-review presentation that showcases these insights beautifully.
 
 Remember to:
-1. Write complete HTML with embedded CSS and JavaScript
-2. Include animation library via CDN (GSAP recommended)
-3. Create one slide per insight (or group related insights)
-4. Add a compelling intro slide
-5. Add a summary "trophy case" slide at the end
-6. Use smooth animations and auto-advance
-7. Make it personal and celebratory
-8. Screenshot and iterate to polish the design
+1. **SELECT A THEME FIRST** - Choose one of the 5 visual themes based on the user's data personality
+2. Write complete HTML with embedded CSS and JavaScript
+3. Include animation library via CDN (GSAP or Anime.js)
+4. Load icon library (Phosphor or Lucide) and Google Fonts that match your theme
+5. Create one slide per insight (or group related insights)
+6. Use diverse backgrounds (patterns, textures, mesh gradients - not plain gradients)
+7. Vary layouts across slides (not all centered)
+8. Add a compelling intro slide
+9. Add a summary "trophy case" slide at the end
+10. Use smooth animations and auto-advance
+11. Make it personal and celebratory
+12. Screenshot and iterate to polish the design
 
-Start by planning the presentation flow, then write the HTML, execute it, screenshot it, and refine.`;
+Start by selecting your theme and documenting why it fits the data, then plan the presentation flow, write the HTML, execute it, screenshot it, and refine.`;
 
   if (additionalGuidance) {
     initialPrompt += `\n\nAdditional guidance: ${additionalGuidance}`;

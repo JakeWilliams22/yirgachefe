@@ -26,6 +26,7 @@ import {
   type IterationCheckpoint,
 } from './services/persistence';
 import { Logger } from './services/logger';
+import { parseDataUrl } from './utils/shareUtils';
 import './App.css';
 
 type AppStep = 'api-key' | 'directory' | 'exploring' | 'writing-code' | 'presenting' | 'results';
@@ -73,6 +74,43 @@ function App() {
     // Check if we have saved code writer result for dev testing
     if (savedCodeWriterResult) {
       setHasSavedCodeWriterResult(true);
+    }
+  }, []);
+
+  // Check for shared presentation in URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const compressed = params.get('p');
+
+    if (compressed) {
+      try {
+        // Track view
+        window.umami?.track('shared-presentation-viewed', {
+          urlLength: window.location.href.length
+        });
+
+        // Decompress presentation HTML
+        const html = parseDataUrl(compressed);
+
+        // Set state to display presentation immediately
+        setFinalPresentationHtml(html);
+        setStep('results');
+
+        // Optional: Clean URL bar (keeps history working)
+        window.history.replaceState({}, '', window.location.pathname);
+
+      } catch (error) {
+        console.error('Failed to load shared presentation:', error);
+        window.umami?.track('shared-presentation-error', {
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
+
+        // User-friendly error
+        alert(
+          'Failed to load shared presentation. The link may be corrupted or incomplete. ' +
+          'Please ask the sender for a new link.'
+        );
+      }
     }
   }, []);
 
