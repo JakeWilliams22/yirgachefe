@@ -43,10 +43,13 @@ export async function createDataUrl(html: string): Promise<DataUrlResult> {
     // 2. Convert to base64
     const base64 = btoa(String.fromCharCode(...compressed));
 
-    // 3. Create URL
-    const url = `${window.location.origin}?p=${base64}`;
+    // 3. Convert to base64url (URL-safe: replace + with - and / with _)
+    const base64url = base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 
-    // 4. Check length
+    // 4. Create URL
+    const url = `${window.location.origin}?p=${base64url}`;
+
+    // 5. Check length
     const tooLarge = url.length > 100000;  // 100K
     const warningSize = url.length > 50000;  // 50K
 
@@ -68,10 +71,34 @@ export async function createDataUrl(html: string): Promise<DataUrlResult> {
  * Decompress data URL parameter back to HTML
  */
 export function parseDataUrl(compressed: string): string {
-  const decoded = atob(compressed);
-  const bytes = Uint8Array.from(decoded, c => c.charCodeAt(0));
-  const html = pako.inflate(bytes, { to: 'string' });
-  return html;
+  try {
+    // Convert base64url back to base64 (reverse URL-safe encoding)
+    let base64 = compressed.replace(/-/g, '+').replace(/_/g, '/');
+
+    // Add back padding if needed
+    while (base64.length % 4) {
+      base64 += '=';
+    }
+
+    // Decode base64
+    const decoded = atob(base64);
+
+    // Convert to byte array
+    const bytes = Uint8Array.from(decoded, c => c.charCodeAt(0));
+
+    // Decompress with pako
+    const html = pako.inflate(bytes, { to: 'string' });
+
+    return html;
+  } catch (error) {
+    console.error('parseDataUrl error details:', {
+      compressedLength: compressed.length,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      firstChars: compressed.substring(0, 20),
+      lastChars: compressed.substring(compressed.length - 20)
+    });
+    throw new Error(`Failed to parse data URL: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
 }
 
 /**

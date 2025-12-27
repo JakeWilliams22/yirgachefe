@@ -6,7 +6,6 @@ import { useEffect, useRef, useState } from 'react';
 import './PresentationView.css';
 import {
   createDataUrl,
-  createGithubGist,
   canUseWebShare,
   shareWithWebApi,
   copyToClipboard,
@@ -40,9 +39,7 @@ export function PresentationView({
   const [shareModalState, setShareModalState] = useState<'closed' | 'loading' | 'options'>('closed');
   const [shareError, setShareError] = useState<string | null>(null);
   const [dataUrlResult, setDataUrlResult] = useState<DataUrlResult | null>(null);
-  const [gistUrl, setGistUrl] = useState<string | null>(null);
-  const [isCreatingGist, setIsCreatingGist] = useState(false);
-  const [isCopyingUrl, setIsCopyingUrl] = useState<'dataurl' | 'gist' | null>(null);
+  const [isCopyingUrl, setIsCopyingUrl] = useState(false);
 
   useEffect(() => {
     if (containerRef.current && onContainerReady && !hasCalledReadyRef.current) {
@@ -90,7 +87,6 @@ export function PresentationView({
     // Reset state
     setShareError(null);
     setDataUrlResult(null);
-    setGistUrl(null);
 
     // Try Web Share API first (mobile)
     if (canUseWebShare() && containerRef.current) {
@@ -149,9 +145,9 @@ export function PresentationView({
   const handleCopyDataUrl = async () => {
     if (!dataUrlResult?.url) return;
 
-    setIsCopyingUrl('dataurl');
+    setIsCopyingUrl(true);
     const success = await copyToClipboard(dataUrlResult.url);
-    setIsCopyingUrl(null);
+    setIsCopyingUrl(false);
 
     if (success) {
       window.umami?.track('share-dataurl-copied', {
@@ -160,59 +156,6 @@ export function PresentationView({
     } else {
       window.umami?.track('share-dataurl-copy-failed');
       setShareError('Failed to copy link. Please try selecting and copying manually.');
-    }
-  };
-
-  const handleCreateGist = async () => {
-    if (!html) return;
-
-    setIsCreatingGist(true);
-    setShareError(null);
-    window.umami?.track('share-gist-attempt');
-
-    const fileName = `year-in-review-${new Date().getFullYear()}.html`;
-    const result = await createGithubGist(html, fileName);
-
-    setIsCreatingGist(false);
-
-    if (result.success && result.url) {
-      window.umami?.track('share-gist-success', {
-        remaining: result.rateLimitRemaining ?? 0
-      });
-      setGistUrl(result.url);
-    } else {
-      if (result.errorType === 'rate_limit') {
-        window.umami?.track('share-gist-rate-limited');
-        const resetTime = result.rateLimitReset
-          ? result.rateLimitReset.toLocaleTimeString()
-          : 'later';
-        setShareError(
-          `GitHub rate limit reached (60 requests per hour). ` +
-          `Try again after ${resetTime}, or use the instant link option below!`
-        );
-      } else if (result.errorType === 'network') {
-        window.umami?.track('share-gist-network-error');
-        setShareError(
-          'Network error creating Gist. Please check your connection and try again.'
-        );
-      } else {
-        window.umami?.track('share-gist-error', { error: result.error || 'unknown' });
-        setShareError(`Could not create Gist: ${result.error}`);
-      }
-    }
-  };
-
-  const handleCopyGistUrl = async () => {
-    if (!gistUrl) return;
-
-    setIsCopyingUrl('gist');
-    const success = await copyToClipboard(gistUrl);
-    setIsCopyingUrl(null);
-
-    if (success) {
-      window.umami?.track('share-gist-url-copied');
-    } else {
-      setShareError('Failed to copy URL. Please try selecting and copying manually.');
     }
   };
 
@@ -338,9 +281,7 @@ export function PresentationView({
                   <div className="share-option">
                     <div className="share-option-header">
                       <h4>🔗 Instant Link</h4>
-                      {!dataUrlResult?.tooLarge && (
-                        <span className="share-option-badge">Recommended</span>
-                      )}
+                      <span className="share-option-badge">Recommended</span>
                     </div>
                     <p>
                       Copy a link with your presentation embedded.
@@ -357,9 +298,9 @@ export function PresentationView({
                         <button
                           className="share-option-button"
                           onClick={handleCopyDataUrl}
-                          disabled={isCopyingUrl === 'dataurl'}
+                          disabled={isCopyingUrl}
                         >
-                          {isCopyingUrl === 'dataurl' ? 'Copying...' : 'Copy Instant Link'}
+                          {isCopyingUrl ? 'Copying...' : 'Copy Instant Link'}
                         </button>
                       </>
                     )}
@@ -367,7 +308,7 @@ export function PresentationView({
                     {dataUrlResult?.tooLarge && (
                       <p className="share-option-error">
                         ❌ Presentation is too large for instant link ({">"} 100KB).
-                        Try GitHub Gist below instead.
+                        Try downloading instead.
                       </p>
                     )}
 
@@ -375,49 +316,6 @@ export function PresentationView({
                       <p className="share-option-error">
                         Failed to generate link: {dataUrlResult.error}
                       </p>
-                    )}
-                  </div>
-
-                  {/* GitHub Gist Option */}
-                  <div className="share-option">
-                    <div className="share-option-header">
-                      <h4>📝 GitHub Gist</h4>
-                      {dataUrlResult?.tooLarge && (
-                        <span className="share-option-badge">Recommended</span>
-                      )}
-                    </div>
-                    <p>
-                      Create a permanent, shareable URL hosted on GitHub.
-                      Perfect for large presentations!
-                    </p>
-
-                    {!gistUrl && (
-                      <button
-                        className="share-option-button secondary"
-                        onClick={handleCreateGist}
-                        disabled={isCreatingGist}
-                      >
-                        {isCreatingGist ? 'Creating Gist...' : 'Create GitHub Gist'}
-                      </button>
-                    )}
-
-                    {gistUrl && (
-                      <>
-                        <input
-                          type="text"
-                          value={gistUrl}
-                          readOnly
-                          className="share-url-input"
-                          onClick={(e) => e.currentTarget.select()}
-                        />
-                        <button
-                          className="share-option-button"
-                          onClick={handleCopyGistUrl}
-                          disabled={isCopyingUrl === 'gist'}
-                        >
-                          {isCopyingUrl === 'gist' ? 'Copying...' : 'Copy Gist URL'}
-                        </button>
-                      </>
                     )}
                   </div>
 
