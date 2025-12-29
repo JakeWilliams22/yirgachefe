@@ -90,7 +90,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
     // Check for billing/rate limit errors
     if (!anthropicResponse.ok) {
-      const errorData = await anthropicResponse.json().catch(() => ({}));
+      const errorData = await anthropicResponse.json().catch(() => ({})) as any;
 
       // Check for billing errors (insufficient credits, overloaded_error with billing)
       if (
