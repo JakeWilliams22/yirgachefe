@@ -90,7 +90,7 @@ export function ApiKeyInput({ onApiKeySet }: ApiKeyInputProps) {
           </p>
 
           <p className="privacy-note">
-            Also note this is AI - it does it's best and in my experience it's usually right (or close), but there's no guarantee.
+            Also note this is AI - it does it's best to be correct, and in my experience it's often right (or close), but there's no guarantee.
           </p>
 
           <div className="button-group" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '2rem' }}>
