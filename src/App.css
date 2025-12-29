@@ -625,7 +625,7 @@ body {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 1rem;
+  padding: 0rem;
   margin: 0;
   font-size: 1.1rem;
   font-weight: 600;

@@ -1,5 +1,6 @@
 .phase-indicator {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 2.5rem 2rem;
@@ -8,6 +9,31 @@
   box-shadow: 0 2px 8px rgba(109, 76, 65, 0.1);
   margin-bottom: 2.5rem;
   border: 1px solid #EFEBE9;
+}
+
+.phase-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.phase-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #6D4C41;
+  margin: 0 0 0.5rem 0;
+}
+
+.phase-timing {
+  font-size: 0.9rem;
+  color: #8D6E63;
+  margin: 0;
+  font-style: italic;
+}
+
+.phase-steps-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .phase-step-wrapper {
@@ -38,6 +64,15 @@
   transition: all 0.3s ease;
 }
 
+.phase-sublabel {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: #8D6E63;
+  text-align: center;
+  margin-top: 0.25rem;
+  transition: all 0.3s ease;
+}
+
 /* Status styles */
 .phase-step.pending .phase-icon {
   opacity: 0.3;
@@ -46,6 +81,10 @@
 
 .phase-step.pending .phase-label {
   color: #BCAAA4;
+}
+
+.phase-step.pending .phase-sublabel {
+  color: #D7CCC8;
 }
 
 .phase-step.active .phase-icon {
@@ -58,12 +97,20 @@
   font-weight: 700;
 }
 
+.phase-step.active .phase-sublabel {
+  color: #A1887F;
+}
+
 .phase-step.completed .phase-icon {
   opacity: 1;
 }
 
 .phase-step.completed .phase-label {
   color: #F39C12;
+}
+
+.phase-step.completed .phase-sublabel {
+  color: #A1887F;
 }
 
 /* Pulse animation for active phase */
@@ -129,8 +176,23 @@
 /* Responsive design */
 @media (max-width: 768px) {
   .phase-indicator {
-    flex-direction: column;
     padding: 1.5rem 1rem;
+  }
+
+  .phase-header {
+    margin-bottom: 1.5rem;
+  }
+
+  .phase-title {
+    font-size: 1.25rem;
+  }
+
+  .phase-timing {
+    font-size: 0.85rem;
+  }
+
+  .phase-steps-container {
+    flex-direction: column;
   }
 
   .phase-step-wrapper {
@@ -161,12 +223,28 @@
   .phase-label {
     font-size: 0.85rem;
   }
+
+  .phase-sublabel {
+    font-size: 0.7rem;
+  }
 }
 
 /* Phone Breakpoint (max-width: 480px) */
 @media (max-width: 480px) {
   .phase-indicator {
     padding: 1.25rem 0.75rem;
+  }
+
+  .phase-header {
+    margin-bottom: 1rem;
+  }
+
+  .phase-title {
+    font-size: 1.1rem;
+  }
+
+  .phase-timing {
+    font-size: 0.8rem;
   }
 
   .phase-step {
@@ -179,6 +257,10 @@
 
   .phase-label {
     font-size: 0.8rem;
+  }
+
+  .phase-sublabel {
+    font-size: 0.65rem;
   }
 
   .phase-connector {

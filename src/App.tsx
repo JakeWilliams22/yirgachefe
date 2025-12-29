@@ -827,7 +827,7 @@ function App() {
           <div className="privacy-content">
             {/* Content placeholder - user will fill this in */}
             <h3>Motivation</h3>
-            <p>SNL Uber Eats Wrapped: <a href="https://youtu.be/Hx7Vv5pqpHg">https://youtu.be/Hx7Vv5pqpHg</a></p>
+            <p>SNL Uber Eats Wrapped: <a href="https://youtu.be/Hx7Vv5pqpHg" target="_blank" rel="noopener noreferrer">https://youtu.be/Hx7Vv5pqpHg</a></p>
 
             <p>
               For better or for worse, every second we spend online is tracked.
