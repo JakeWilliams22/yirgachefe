@@ -12,6 +12,7 @@ import type { CheckpointData } from './agents/AgentRunner';
 import type { AgentEvent, AgentResult } from './agents/types';
 import type { Insight } from './types/insights';
 import type { Message } from './services/anthropic';
+import { PROXY_MODE_KEY } from './services/anthropic';
 import {
   saveApiKey,
   loadApiKey,
@@ -116,7 +117,10 @@ function App() {
 
   const handleApiKeySet = useCallback((key: string) => {
     setApiKey(key);
-    saveApiKey(key);
+    // Only save real API keys to localStorage, not demo mode
+    if (key !== PROXY_MODE_KEY) {
+      saveApiKey(key);
+    }
     setStep('directory');
   }, []);
 
@@ -887,20 +891,6 @@ function App() {
               </div>
             )}
             <DirectoryPicker onDirectorySelected={handleDirectorySelected} />
-
-            <div style={{ marginTop: '2rem', textAlign: 'center' }}>
-              <button
-                className="text-button"
-                onClick={() => {
-                  localStorage.removeItem('apiKey');
-                  setApiKey(null);
-                  setStep('api-key');
-                }}
-                style={{ textDecoration: 'underline', opacity: 0.7 }}
-              >
-                Change API Key
-              </button>
-            </div>
           </>
         )}
 
