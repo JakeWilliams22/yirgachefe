@@ -4,7 +4,7 @@
  * Supports checkpointing and resuming for crash recovery.
  */
 
-import { AnthropicClient } from '../services/anthropic';
+import { createClient } from '../services/anthropic';
 import { AgentRunner, type CheckpointData } from './AgentRunner';
 import { createFileSystemTools } from './tools';
 import type { AgentConfig, AgentResult, AgentEventListener } from './types';
@@ -108,7 +108,7 @@ export function createExplorationAgent(
     additionalGuidance,
   } = options;
 
-  const client = new AnthropicClient(apiKey, model);
+  const client = createClient(apiKey, model);
   const tools = createFileSystemTools(rootHandle);
 
   const config: AgentConfig = {

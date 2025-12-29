@@ -3,7 +3,7 @@
  * Takes insights from CodeWriterAgent and creates a celebratory, animated HTML presentation
  */
 
-import { AnthropicClient } from '../services/anthropic';
+import { createClient } from '../services/anthropic';
 import { AgentRunner, type CheckpointData } from './AgentRunner';
 import { createExecutePresentationCodeTool } from './tools/executePresentationCode';
 import { createScreenshotPresentationTool } from './tools/screenshotPresentation';
@@ -417,7 +417,7 @@ Start by selecting your theme and documenting why it fits the data, then plan th
     initialPrompt += `\n\nAdditional guidance: ${additionalGuidance}`;
   }
 
-  const anthropicClient = new AnthropicClient(apiKey);
+  const anthropicClient = createClient(apiKey);
 
   const agentConfig: AgentConfig = {
     name: 'PresentationAgent',

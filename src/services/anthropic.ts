@@ -7,6 +7,7 @@
 import { RateLimiter, type RateLimitListener } from './rateLimiter';
 
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
+const PROXY_API_URL = '/api/proxy';
 const DEFAULT_MODEL = 'claude-sonnet-4-20250514';
 const MAX_TOKENS = 4096;
 const MAX_RETRIES = 3;
@@ -107,12 +108,14 @@ export interface AnthropicClientOptions {
   apiKey: string;
   model?: string;
   enableRateLimiting?: boolean;
+  useProxy?: boolean;
 }
 
 export class AnthropicClient {
   private apiKey: string;
   private model: string;
   private rateLimiter: RateLimiter | null = null;
+  private useProxy: boolean = false;
 
   constructor(apiKey: string, model?: string);
   constructor(options: AnthropicClientOptions);
@@ -125,6 +128,7 @@ export class AnthropicClient {
     } else {
       this.apiKey = apiKeyOrOptions.apiKey;
       this.model = apiKeyOrOptions.model || DEFAULT_MODEL;
+      this.useProxy = apiKeyOrOptions.useProxy || false;
       if (apiKeyOrOptions.enableRateLimiting !== false) {
         this.rateLimiter = new RateLimiter();
       }
@@ -234,14 +238,20 @@ export class AnthropicClient {
       };
     }
 
-    const response = await fetch(ANTHROPIC_API_URL, {
+    const url = this.useProxy ? PROXY_API_URL : ANTHROPIC_API_URL;
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    if (!this.useProxy) {
+      headers['x-api-key'] = this.apiKey;
+      headers['anthropic-version'] = '2023-06-01';
+      headers['anthropic-dangerous-direct-browser-access'] = 'true';
+    }
+
+    const response = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': this.apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
+      headers,
       body: JSON.stringify({
         model: request.model || this.model,
         max_tokens: request.maxTokens || MAX_TOKENS,
@@ -292,14 +302,20 @@ export class AnthropicClient {
       };
     }
 
-    const response = await fetch(ANTHROPIC_API_URL, {
+    const url = this.useProxy ? PROXY_API_URL : ANTHROPIC_API_URL;
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    if (!this.useProxy) {
+      headers['x-api-key'] = this.apiKey;
+      headers['anthropic-version'] = '2023-06-01';
+      headers['anthropic-dangerous-direct-browser-access'] = 'true';
+    }
+
+    const response = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': this.apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
+      headers,
       body: JSON.stringify({
         model: request.model || this.model,
         max_tokens: request.maxTokens || MAX_TOKENS,
@@ -451,6 +467,26 @@ export class AnthropicError extends Error {
   get isOverloaded(): boolean {
     return this.status === 529;
   }
+}
+
+/**
+ * Special marker for proxy mode
+ */
+export const PROXY_MODE_KEY = '__USE_PROXY__';
+
+/**
+ * Create an Anthropic client with automatic proxy detection.
+ * If apiKey is PROXY_MODE_KEY, uses proxy mode.
+ */
+export function createClient(apiKey: string, model?: string): AnthropicClient {
+  if (apiKey === PROXY_MODE_KEY) {
+    return new AnthropicClient({
+      apiKey: PROXY_MODE_KEY,
+      model,
+      useProxy: true,
+    });
+  }
+  return new AnthropicClient(apiKey, model);
 }
 
 /**

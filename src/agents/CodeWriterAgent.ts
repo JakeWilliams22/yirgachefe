@@ -4,7 +4,7 @@
  * Iterates on errors to fix code until insights are successfully generated.
  */
 
-import { AnthropicClient } from '../services/anthropic';
+import { createClient } from '../services/anthropic';
 import { AgentRunner, type CheckpointData } from './AgentRunner';
 import { createCodeWriterTools } from './tools';
 import type { AgentConfig, AgentResult, AgentEventListener, Discovery } from './types';
@@ -538,7 +538,7 @@ export function createCodeWriterAgent(
     additionalGuidance,
   } = options;
 
-  const client = new AnthropicClient(apiKey, model);
+  const client = createClient(apiKey, model);
   const tools = createCodeWriterTools(rootHandle);
 
   // Build initial prompt with discoveries
