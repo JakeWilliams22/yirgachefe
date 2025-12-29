@@ -887,6 +887,20 @@ function App() {
               </div>
             )}
             <DirectoryPicker onDirectorySelected={handleDirectorySelected} />
+
+            <div style={{ marginTop: '2rem', textAlign: 'center' }}>
+              <button
+                className="text-button"
+                onClick={() => {
+                  localStorage.removeItem('apiKey');
+                  setApiKey(null);
+                  setStep('api-key');
+                }}
+                style={{ textDecoration: 'underline', opacity: 0.7 }}
+              >
+                Change API Key
+              </button>
+            </div>
           </>
         )}
 
