@@ -363,7 +363,7 @@ interface PresentationAgentConfig {
   userName?: string;
   executor: PresentationExecutor;
   apiKey: string;
-  onScreenshot?: (dataUrl: string) => void;
+  onScreenshot?: (dataUrl: string[]) => void;
   onCheckpoint?: (data: CheckpointData, iteration: number) => void;
   additionalGuidance?: string;
 }
