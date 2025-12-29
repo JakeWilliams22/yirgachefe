@@ -95,13 +95,13 @@ Create a single HTML file with:
 **Top causes of black/invisible slides and how to avoid them:**
 
 1. **Animations stuck at opacity: 0**
-   - ❌ WRONG: Setting `opacity: 0` in CSS without animations to show it
-   - ✅ RIGHT: Only inactive slides have `opacity: 0`, active slides animate to `opacity: 1`
-   - Always call `showSlide(0)` on page load to activate first slide
+   - ❌ WRONG: Setting 'opacity: 0' in CSS without animations to show it
+   - ✅ RIGHT: Only inactive slides have 'opacity: 0', active slides animate to 'opacity: 1'
+   - Always call 'showSlide(0)' on page load to activate first slide
 
 2. **Content positioned off-screen**
-   - ❌ WRONG: Using `position: absolute` without safe bounds checks
-   - ❌ WRONG: Using `justify-content: flex-start` with negative margins
+   - ❌ WRONG: Using 'position: absolute' without safe bounds checks
+   - ❌ WRONG: Using 'justify-content: flex-start' with negative margins
    - ✅ RIGHT: Always use minimum 40-60px padding on all slides
    - ✅ RIGHT: Keep flexbox/grid content centered or with safe start positions
 
@@ -111,21 +111,21 @@ Create a single HTML file with:
    - For themed slides, explicitly verify: "Does this text color show on this background?"
 
 4. **Broken pseudo-element backgrounds**
-   - ❌ WRONG: `::before` or `::after` covering content with `z-index` issues
-   - ✅ RIGHT: Pseudo-elements stay at `z-index: -1` or behind content with `position: absolute`
+   - ❌ WRONG: '::before' or '::after' covering content with 'z-index' issues
+   - ✅ RIGHT: Pseudo-elements stay at 'z-index: -1' or behind content with 'position: absolute'
 
 5. **Missing animation triggers**
-   - ❌ WRONG: GSAP code exists but `showSlide()` never runs
-   - ✅ RIGHT: Always include initialization: `showSlide(0)` after defining the function
+   - ❌ WRONG: GSAP code exists but 'showSlide()' never runs
+   - ✅ RIGHT: Always include initialization: 'showSlide(0)' after defining the function
    - ✅ RIGHT: Set up navigation: click handler, keyboard handler, auto-advance interval
 
 6. **Grid/Flexbox dimension collapse**
    - ❌ WRONG: Grid cells with no explicit width/height or content sizing
-   - ✅ RIGHT: Split-screen grids use `grid-template-columns: 1fr 1fr` with content that has size
+   - ✅ RIGHT: Split-screen grids use 'grid-template-columns: 1fr 1fr' with content that has size
    - ✅ RIGHT: Flex containers have defined dimensions or grow to fit visible content
 
 **Safe Layout Pattern (Use This by Default):**
-```css
+'''css
 .slide {
   width: 100vw;
   height: 100vh;
@@ -140,52 +140,52 @@ Create a single HTML file with:
   opacity: 0;                /* inactive by default */
 }
 .slide.active { opacity: 1; } /* visible when active */
-```
+'''
 
 **When Using Non-Centered Layouts:**
-- **Top-left corner**: Use `justify-content: flex-start; align-items: flex-start;` with 80px+ padding
-- **Split-screen**: Use CSS Grid with explicit `grid-template-columns` and ensure both sides have content
+- **Top-left corner**: Use 'justify-content: flex-start; align-items: flex-start;' with 80px+ padding
+- **Split-screen**: Use CSS Grid with explicit 'grid-template-columns' and ensure both sides have content
 - **Full-bleed backgrounds**: Verify foreground content isn't lost behind them (z-index management)
 
 ### Recommended Libraries
 
 **GSAP** (Timeline-based animations):
-\`\`\`html
+\'\'\'html
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
 <script>
   gsap.to(".element", { x: 100, duration: 1 });
 </script>
-\`\`\`
+\'\'\'
 
 **Anime.js** (Lightweight animations):
-\`\`\`html
+\'\'\'html
 <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.2/lib/anime.min.js"></script>
 <script>
   anime({ targets: '.element', translateX: 250 });
 </script>
-\`\`\`
+\'\'\'
 
 ### Icon Libraries (Use Instead of Emoji)
 
 **Phosphor Icons** (playful, modern):
-\`\`\`html
+\'\'\'html
 <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.0.3/src/regular/style.css">
 <!-- Usage: <i class="ph ph-trophy"></i> -->
-\`\`\`
+\'\'\'
 
 **Lucide Icons** (clean, consistent):
-\`\`\`html
+\'\'\'html
 <script src="https://unpkg.com/lucide@latest"></script>
 <!-- Usage: <i data-lucide="award"></i> then call lucide.createIcons() -->
-\`\`\`
+\'\'\'
 
 ### Typography
 
 Load interesting fonts via Google Fonts:
-\`\`\`html
+\'\'\'html
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;900&family=Bebas+Neue&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
-\`\`\`
+\'\'\'
 
 **Theme-appropriate fonts:**
 - **Brutalist Bold**: Bebas Neue, Impact, Arial Black
@@ -199,7 +199,7 @@ Load interesting fonts via Google Fonts:
 Move beyond simple gradients. Choose techniques that match your selected theme:
 
 ### Animated Mesh Gradients
-\`\`\`css
+\'\'\'css
 background:
   radial-gradient(circle at 20% 50%, rgba(255,0,128,0.4) 0%, transparent 50%),
   radial-gradient(circle at 80% 80%, rgba(0,255,255,0.4) 0%, transparent 50%),
@@ -212,10 +212,10 @@ animation: meshMove 10s ease infinite;
   0%, 100% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
 }
-\`\`\`
+\'\'\'
 
 ### CSS Pattern Backgrounds
-\`\`\`css
+\'\'\'css
 /* Dots */
 background-image: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
 background-size: 30px 30px;
@@ -228,10 +228,10 @@ background-size: 50px 50px;
 
 /* Diagonal Stripes */
 background: repeating-linear-gradient(45deg, #000, #000 10px, #111 10px, #111 20px);
-\`\`\`
+\'\'\'
 
 ### Texture & Effects
-\`\`\`css
+\'\'\'css
 /* Glass morphism */
 background: rgba(255, 255, 255, 0.1);
 backdrop-filter: blur(10px);
@@ -242,44 +242,44 @@ border: 1px solid rgba(255, 255, 255, 0.2);
   background: linear-gradient(45deg, #ff0080, #ff8c00);
   mix-blend-mode: screen;
 }
-\`\`\`
+\'\'\'
 
 ## Layout Variations (Not Just Centered Text)
 
 Use diverse layouts to maintain visual interest:
 
 ### Split Screen
-\`\`\`css
+\'\'\'css
 .slide {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0;
 }
-\`\`\`
+\'\'\'
 
 ### Corner Focus
-\`\`\`css
+\'\'\'css
 .slide {
   display: flex;
   justify-content: flex-start;
   align-items: flex-start;
   padding: 80px;
 }
-\`\`\`
+\'\'\'
 
 ### Full-Bleed Number Background
-\`\`\`css
+\'\'\'css
 .big-number {
   font-size: 40vw;
   position: absolute;
   opacity: 0.1;
   z-index: -1;
 }
-\`\`\`
+\'\'\'
 
 ### Example Structure
 
-\`\`\`html
+\'\'\'html
 <!DOCTYPE html>
 <html>
 <head>
@@ -374,7 +374,7 @@ Use diverse layouts to maintain visual interest:
   </script>
 </body>
 </html>
-\`\`\`
+\'\'\'
 
 ## Iteration Process
 
@@ -382,14 +382,14 @@ Use diverse layouts to maintain visual interest:
 2. **Design**: Sketch out slide types and layouts mentally
 3. **Write**: Create complete HTML/CSS/JS with all slides
 4. **Self-Review Checklist** (before executing):
-   - ✅ Every slide has `.slide` class with proper structure?
-   - ✅ First slide has `active` class or `showSlide(0)` is called on load?
+   - ✅ Every slide has '.slide' class with proper structure?
+   - ✅ First slide has 'active' class or 'showSlide(0)' is called on load?
    - ✅ All text has high contrast against backgrounds?
    - ✅ Non-centered layouts use adequate padding (60px+)?
-   - ✅ Pseudo-elements use `z-index: -1` if decorative?
+   - ✅ Pseudo-elements use 'z-index: -1' if decorative?
    - ✅ Grid layouts have explicit column/row definitions?
    - ✅ Animation functions are defined AND called?
-5. **Execute**: Run using \`execute_presentation_code\`
+5. **Execute**: Run using \'execute_presentation_code\'
 6. **Polish**: If needed, refine animations, copy, or styling
 
 ## Tools Available
@@ -481,7 +481,7 @@ Remember to:
 Start by selecting your theme, then carefully write the HTML following the visibility guidelines, and execute it.`;
 
   if (additionalGuidance) {
-    initialPrompt += `\n\nAdditional guidance: ${additionalGuidance}`;
+    initialPrompt += '\n\nAdditional guidance: ${additionalGuidance}';
   }
 
   const anthropicClient = createClient(apiKey);
