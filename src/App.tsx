@@ -26,7 +26,6 @@ import {
   type AgentCheckpoint,
   type IterationCheckpoint,
 } from './services/persistence';
-import { Logger } from './services/logger';
 import { parseDataUrl } from './utils/shareUtils';
 import './App.css';
 
@@ -58,9 +57,6 @@ function App() {
   const presentationStartedRef = useRef(false); // Use ref for synchronous check
   const [finalPresentationHtml, setFinalPresentationHtml] = useState<string | null>(null);
   const [hasSavedCodeWriterResult, setHasSavedCodeWriterResult] = useState(false);
-
-  // Logger for writing to local log file
-  const loggerRef = useRef<Logger | null>(null);
 
   // Check for saved state on mount
   useEffect(() => {
@@ -196,9 +192,6 @@ function App() {
       console.log('Code output length:', codeOutput.length);
       console.log('Summary:', codeWriterResult.summary.substring(0, 100));
 
-      // Log phase transition
-      loggerRef.current?.log('system', 'Starting presentation phase');
-
       try {
         // Create executor
         const executor = new PresentationExecutor(container);
@@ -227,9 +220,6 @@ function App() {
         agent.on((event) => {
           console.log('Presentation event:', event.type);
           setEvents((prev) => [...prev, event]);
-
-          // Log event
-          loggerRef.current?.logEvent('presentation', event);
 
           // Accumulate conversation history
           if (event.type === 'conversation_update') {
@@ -281,8 +271,6 @@ function App() {
             presentationStartedRef.current = false;
             // Clear checkpoint on successful completion
             clearSession();
-            // Flush logs
-            loggerRef.current?.forceFlush();
           }
 
           if (event.type === 'status_change' && event.status === 'error') {
@@ -323,9 +311,6 @@ function App() {
     ) => {
       if (!apiKey) return;
 
-      // Log phase transition
-      loggerRef.current?.log('system', 'Starting code writing phase');
-
       // Add phase transition marker to conversation history
       setAllConversationHistory((prev) => [
         ...prev,
@@ -349,9 +334,6 @@ function App() {
       // Subscribe to events
       agent.on((event) => {
         setEvents((prev) => [...prev, event]);
-
-        // Log event
-        loggerRef.current?.logEvent('code-writing', event);
 
         // Accumulate conversation history
         if (event.type === 'conversation_update') {
@@ -448,20 +430,12 @@ function App() {
       const newSessionId = resumeFrom ? sessionId : generateSessionId();
       setSessionId(newSessionId);
 
-      // Initialize logger
-      if (!loggerRef.current) {
-        loggerRef.current = new Logger(handle, newSessionId!);
-        loggerRef.current.log('system', `Session started: ${handle.name}`);
-      }
-
       // Save session info
       saveSession({
         directoryName: handle.name,
         startedAt: new Date().toISOString(),
         lastUpdatedAt: new Date().toISOString(),
       });
-
-      loggerRef.current.log('system', 'Starting exploration phase');
 
       const agent = createExplorationAgent({
         rootHandle: handle,
@@ -477,9 +451,6 @@ function App() {
       // Subscribe to events
       agent.on((event) => {
         setEvents((prev) => [...prev, event]);
-
-        // Log event
-        loggerRef.current?.logEvent('exploration', event);
 
         // Accumulate conversation history
         if (event.type === 'conversation_update') {
