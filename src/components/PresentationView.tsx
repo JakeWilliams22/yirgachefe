@@ -16,8 +16,8 @@ import { PresentationExecutor } from '../services/presentationExecution';
 interface PresentationViewProps {
   /** Whether the agent is currently working */
   isGenerating?: boolean;
-  /** Latest screenshot from the agent's iteration */
-  screenshot?: string | null;
+  /** Latest screenshots from the agent's iteration */
+  screenshots?: string[];
   /** Callback to get the iframe container ref */
   onContainerReady?: (container: HTMLDivElement) => void;
   /** Final HTML for download/viewing (only in results phase) */
@@ -26,12 +26,13 @@ interface PresentationViewProps {
 
 export function PresentationView({
   isGenerating = false,
-  screenshot = null,
+  screenshots = [],
   onContainerReady,
   html = null,
 }: PresentationViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [showScreenshot, setShowScreenshot] = useState(false);
+  const [currentScreenshotIndex, setCurrentScreenshotIndex] = useState(0);
   const [showShareModal, setShowShareModal] = useState(false);
   const hasCalledReadyRef = useRef(false);
 
@@ -171,12 +172,17 @@ export function PresentationView({
         )}
         {!isGenerating && (
           <div className="presentation-controls">
-            {screenshot && (
+            {screenshots.length > 0 && (
               <button
                 className={`screenshot-toggle ${showScreenshot ? 'active' : ''}`}
                 onClick={() => setShowScreenshot(!showScreenshot)}
               >
-                {showScreenshot ? 'Show Live' : 'Show Screenshot'}
+                {showScreenshot
+                  ? 'Show Live'
+                  : screenshots.length > 1
+                    ? `Show Screenshots (${screenshots.length})`
+                    : 'Show Screenshot'
+                }
               </button>
             )}
             {html && (
@@ -230,14 +236,35 @@ export function PresentationView({
         )}
 
         {/* Screenshot view for agent iteration */}
-        {screenshot && showScreenshot && (
+        {screenshots.length > 0 && showScreenshot && (
           <div className="screenshot-container">
-            <img src={screenshot} alt="Presentation screenshot" />
+            <img src={screenshots[currentScreenshotIndex]} alt={`Presentation screenshot ${currentScreenshotIndex + 1} of ${screenshots.length}`} />
+            {screenshots.length > 1 && (
+              <div className="screenshot-navigation">
+                <button
+                  className="screenshot-nav-button"
+                  onClick={() => setCurrentScreenshotIndex((prev) => (prev - 1 + screenshots.length) % screenshots.length)}
+                  disabled={screenshots.length <= 1}
+                >
+                  ‹ Previous
+                </button>
+                <span className="screenshot-counter">
+                  {currentScreenshotIndex + 1} / {screenshots.length}
+                </span>
+                <button
+                  className="screenshot-nav-button"
+                  onClick={() => setCurrentScreenshotIndex((prev) => (prev + 1) % screenshots.length)}
+                  disabled={screenshots.length <= 1}
+                >
+                  Next ›
+                </button>
+              </div>
+            )}
           </div>
         )}
 
         {/* Loading state */}
-        {!screenshot && isGenerating && (
+        {screenshots.length === 0 && isGenerating && (
           <div className="presentation-loading">
             <div className="loading-spinner"></div>
             <p>Creating your personalized year-in-review...</p>

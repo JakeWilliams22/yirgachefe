@@ -50,8 +50,7 @@ export function ApiKeyInput({ onApiKeySet }: ApiKeyInputProps) {
     <div className="api-key-input">
       <h2>Enter your Anthropic API Key</h2>
       <p className="privacy-note">
-        Your API key stays in your browser and is never sent to any server except
-        Anthropic's API. All data processing happens locally.
+        Your API key is stored locally in your browser and is only sent to Anthropic to any server except. Steps of this will write code that gets executed locally in your browser. My rough execution cost has been ~$2.
       </p>
 
       <form onSubmit={handleSubmit}>

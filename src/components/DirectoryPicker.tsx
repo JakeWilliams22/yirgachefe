@@ -45,6 +45,8 @@ export function DirectoryPicker({ onDirectorySelected }: DirectoryPickerProps) {
           The File System Access API is not supported in your browser. Please use{' '}
           <strong>Google Chrome</strong> or <strong>Microsoft Edge</strong> to use
           this application.
+          <br />
+          Sorry - I am a Firefox user myself.
         </p>
       </div>
     );

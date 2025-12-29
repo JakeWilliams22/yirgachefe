@@ -159,7 +159,8 @@ export class PresentationExecutor {
       }
 
       // Give animations extra time to settle before capturing
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      // Increased to 2500ms to allow GSAP/Anime.js animations with stagger effects to complete
+      await new Promise((resolve) => setTimeout(resolve, 2500));
 
       // Import html2canvas dynamically
       const html2canvas = (await import('html2canvas')).default;
@@ -187,6 +188,73 @@ export class PresentationExecutor {
         success: false,
         error: error instanceof Error ? error.message : String(error),
       };
+    }
+  }
+
+  /**
+   * Capture multiple screenshots at different time intervals
+   * @param count Number of screenshots to capture (always 3)
+   */
+  async screenshotMultiple(count: number = 3): Promise<ScreenshotResult[]> {
+    const results: ScreenshotResult[] = [];
+
+    try {
+      if (!this.iframe || !this.iframe.contentWindow) {
+        throw new Error('No iframe loaded');
+      }
+
+      // Import html2canvas once
+      const html2canvas = (await import('html2canvas')).default;
+
+      // Timing strategy: offset from typical slide transitions to avoid sync issues
+      // Most presentations use 3-5 second auto-advance
+      // We use 2.5s, 6.7s, 10.3s to capture different slides without aligning perfectly
+      const captureTimings = [2500, 4200, 3600]; // Initial, then intervals with decimals
+
+      for (let i = 0; i < count; i++) {
+        try {
+          // Get iframe document
+          const iframeDoc = this.iframe.contentDocument || this.iframe.contentWindow.document;
+          if (!iframeDoc.body) {
+            throw new Error('Iframe document not ready');
+          }
+
+          // Wait before capturing with staggered timing
+          await new Promise((resolve) => setTimeout(resolve, captureTimings[i]));
+
+          // Capture screenshot
+          const canvas = await html2canvas(iframeDoc.body, {
+            allowTaint: true,
+            useCORS: true,
+            logging: false,
+            backgroundColor: '#000000',
+            scale: 1,
+            windowWidth: iframeDoc.documentElement.scrollWidth,
+            windowHeight: iframeDoc.documentElement.scrollHeight,
+          });
+
+          // Convert to data URL
+          const dataUrl = canvas.toDataURL('image/png');
+
+          results.push({
+            success: true,
+            dataUrl,
+          });
+        } catch (error) {
+          results.push({
+            success: false,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
+      }
+
+      return results;
+    } catch (error) {
+      // If we fail before any screenshots, return an error for each requested screenshot
+      return Array(count).fill({
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   }
 

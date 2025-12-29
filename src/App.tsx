@@ -52,7 +52,7 @@ function App() {
 
   // Presentation phase state
   const [presentationExecutor, setPresentationExecutor] = useState<PresentationExecutor | null>(null);
-  const [screenshot, setScreenshot] = useState<string | null>(null);
+  const [screenshots, setScreenshots] = useState<string[]>([]);
   const [userName, setUserName] = useState<string | undefined>(undefined);
   const presentationStartedRef = useRef(false); // Use ref for synchronous check
   const [finalPresentationHtml, setFinalPresentationHtml] = useState<string | null>(null);
@@ -208,9 +208,9 @@ function App() {
           executor,
           apiKey,
           onCheckpoint: handleCheckpoint,
-          onScreenshot: (dataUrl) => {
-            console.log('Screenshot captured');
-            setScreenshot(dataUrl);
+          onScreenshot: (dataUrls) => {
+            console.log('Screenshots captured:', `${dataUrls.length} screenshots`);
+            setScreenshots(dataUrls);
           },
           additionalGuidance,
         });
@@ -770,8 +770,10 @@ function App() {
         <h1>
           yirgachefe ☕
         </h1>
-        <p>Create a personalized year-in-review for any exported data</p>
-        <p>Note: This is an experimental project. Data exports often contain sensitive data. Use at your own risk. Expand the privacy section for more information. </p>
+        <h2>Spotify Wrapped for any GDPR-exported data </h2>
+        <h3 style={{ fontWeight: 400, marginTop: '0.35em', fontSize: '1.1em', color: '#888' }}>
+          Eleven months of the year we use data for its true purpose: generating revenue. But for one glorious month we can do something fun with it. 
+        </h3>
       </header>
 
       <div className="privacy-section">
@@ -785,6 +787,8 @@ function App() {
         </button>
         {isPrivacySectionExpanded && (
           <div className="privacy-content">
+          <p></p>
+          <p>Exported data is often sensitive.</p>
           <h3>Disclaimer</h3>
           <p>
             <strong>This app is provided "as is" without any warranties. By using this app, you acknowledge that you do so at your own risk. The creator is not responsible for any damages, data compromises, or other issues that may result from using this application.</strong>
@@ -797,8 +801,8 @@ function App() {
             We aimed to:
           </p>
           <ul>
-            <li>Make API calls only for LLM generations (Claude API) and some basic usage stats.</li>
-            <li>Store any state locally in your browser and on your file system.</li>
+            <li>Make API calls only for (1) LLM generations (Claude API) and (2) some basic usage stats.</li>
+            <li>Store all state locally in your browser and on your file system.</li>
           </ul>
           <p>
             The code that backs this app was not reviewed by anyone well-versed in security. Much of this code was not reviewed at all.
@@ -823,24 +827,21 @@ function App() {
           <div className="privacy-content">
             {/* Content placeholder - user will fill this in */}
             <h3>Motivation</h3>
-            <p>
-              Every second we spend online is tracked.
-            </p>
-            <p>
-              For 11 months of the year, we use this data for its true purpose (generating revenue). But December is a time to use that data for a brief moment of delight. A glimpse into our soul. To make sure our friends know your #1 artist is someone niche (you're not that mainstream).
+            <p>SNL Uber Eats Wrapped: <a href="https://youtu.be/Hx7Vv5pqpHg">https://youtu.be/Hx7Vv5pqpHg</a></p>
 
-              <br /><br />
+            <p>
+              For better or for worse, every second we spend online is tracked.
 
               Unfortunately, not all of your services nicely wrap up your year for you. Some even make you pay for it!
 
               <br /><br />
 
-              The most popular services have dedicated websites built for their specific export format, but there's no guarantee those sites handle your data responsibly or even work with this year's export format. I wanted to make a mostly browser-side service that would work for <em>any</em> data I gave it.
+              The most popular services have dedicated websites built for their specific export format, but there's no guarantee those sites handle your data responsibly or even work with this year's export format. I wanted to make a mostly browser-side, open-source service that would work for <em>any</em> of my data.
             </p>
             <h3>How it works</h3>
             <ol>
               <li>
-                Request an export of your data from your trusty {`{MusicStreamingService|FitnessTracker|ShellTerminal|BookReadingSocialMedia}`}
+                Request an export of your data from your trusty <code>{`{MusicStreamingService|FoodDeliveryApp|ShellTerminal|BookReadingSocialMedia|FitnessTracker}`}</code>
               </li>
               <li>
                 Wait <code>n</code> hours to receive your data
@@ -849,13 +850,13 @@ function App() {
                 Select the directory with your unzipped, exported data in Yirgachefe.
               </li>
               <li>
-                A data exploration agent tries to understand the shape of your exported data, including what kind of data it is, and who it belongs to. 
+                An "exploration" agent tries to understand the shape of your exported data, including what kind of data it is, and who it belongs to. 
               </li>
               <li>
                 An "analysis" agent comes up with some interesting insights that highlight your accomplishments, and writes in-browser javascript to extract the insights from the files you provided.
               </li>
               <li>
-                A "presentation" agent iterates on an <code>&lt;iframe&gt;</code> based presentation  to give you your findings in a fun and lighthearted sequence of screens reminiscent of 2005 era powerpoint. 
+                A "presentation" agent iterates on an <code>&lt;iframe&gt;</code> based presentation to give you your findings in a fun and lighthearted sequence of screens reminiscent of 2005 era powerpoint. 
               </li>
             </ol>
           </div>
@@ -943,7 +944,7 @@ function App() {
               <>
                 <PresentationView
                   isGenerating={true}
-                  screenshot={screenshot}
+                  screenshots={screenshots}
                   onContainerReady={(container) => {
                     // Start presentation agent when container is ready
                     if (result) {
@@ -972,7 +973,7 @@ function App() {
               <>
                 <PresentationView
                   isGenerating={false}
-                  screenshot={screenshot}
+                  screenshots={screenshots}
                   html={finalPresentationHtml}
                   onContainerReady={(container) => {
                     // Re-render final presentation with saved HTML
@@ -1003,7 +1004,9 @@ function App() {
 
       <footer className="app-footer">
         <p>
-          atl | <a style={{  textDecoration: 'underline' }} href="https://www.linkedin.com/in/who-is-jake-williams/">me</a>
+          atl |
+          &nbsp;<a href="https://github.com/JakeWilliams22/yirgachefe">github |</a>
+          &nbsp;<a href="mailto:jakew@duck.com">me</a>
           {sessionId && <span className="session-id"> Session: {sessionId.slice(-8)}</span>}
         </p>
       </footer>
