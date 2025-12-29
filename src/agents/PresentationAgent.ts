@@ -90,6 +90,63 @@ Create a single HTML file with:
 - Embedded JavaScript in <script> tags
 - Animation library loaded via CDN
 
+### CRITICAL: Preventing Invisible Slides
+
+**Top causes of black/invisible slides and how to avoid them:**
+
+1. **Animations stuck at opacity: 0**
+   - ❌ WRONG: Setting `opacity: 0` in CSS without animations to show it
+   - ✅ RIGHT: Only inactive slides have `opacity: 0`, active slides animate to `opacity: 1`
+   - Always call `showSlide(0)` on page load to activate first slide
+
+2. **Content positioned off-screen**
+   - ❌ WRONG: Using `position: absolute` without safe bounds checks
+   - ❌ WRONG: Using `justify-content: flex-start` with negative margins
+   - ✅ RIGHT: Always use minimum 40-60px padding on all slides
+   - ✅ RIGHT: Keep flexbox/grid content centered or with safe start positions
+
+3. **Invisible text (color issues)**
+   - ❌ WRONG: Dark text on dark backgrounds, light text on light backgrounds
+   - ✅ RIGHT: High contrast - white/light text on dark backgrounds, dark text on light backgrounds
+   - For themed slides, explicitly verify: "Does this text color show on this background?"
+
+4. **Broken pseudo-element backgrounds**
+   - ❌ WRONG: `::before` or `::after` covering content with `z-index` issues
+   - ✅ RIGHT: Pseudo-elements stay at `z-index: -1` or behind content with `position: absolute`
+
+5. **Missing animation triggers**
+   - ❌ WRONG: GSAP code exists but `showSlide()` never runs
+   - ✅ RIGHT: Always include initialization: `showSlide(0)` after defining the function
+   - ✅ RIGHT: Set up navigation: click handler, keyboard handler, auto-advance interval
+
+6. **Grid/Flexbox dimension collapse**
+   - ❌ WRONG: Grid cells with no explicit width/height or content sizing
+   - ✅ RIGHT: Split-screen grids use `grid-template-columns: 1fr 1fr` with content that has size
+   - ✅ RIGHT: Flex containers have defined dimensions or grow to fit visible content
+
+**Safe Layout Pattern (Use This by Default):**
+```css
+.slide {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;  /* centers vertically */
+  align-items: center;       /* centers horizontally */
+  padding: 60px;             /* safe margin from edges */
+  position: absolute;
+  top: 0;
+  left: 0;
+  opacity: 0;                /* inactive by default */
+}
+.slide.active { opacity: 1; } /* visible when active */
+```
+
+**When Using Non-Centered Layouts:**
+- **Top-left corner**: Use `justify-content: flex-start; align-items: flex-start;` with 80px+ padding
+- **Split-screen**: Use CSS Grid with explicit `grid-template-columns` and ensure both sides have content
+- **Full-bleed backgrounds**: Verify foreground content isn't lost behind them (z-index management)
+
 ### Recommended Libraries
 
 **GSAP** (Timeline-based animations):
@@ -321,17 +378,23 @@ Use diverse layouts to maintain visual interest:
 
 ## Iteration Process
 
-1. Write complete HTML/CSS/JS based on insights
-2. Execute using \`execute_presentation_code\`
-3. Screenshot using \`screenshot_presentation\`
-4. Analyze the visual result
-5. Iterate to improve design, animations, and copy
-6. Repeat until the presentation is polished and impressive
+1. **Plan**: Review insights and select appropriate visual theme
+2. **Design**: Sketch out slide types and layouts mentally
+3. **Write**: Create complete HTML/CSS/JS with all slides
+4. **Self-Review Checklist** (before executing):
+   - ✅ Every slide has `.slide` class with proper structure?
+   - ✅ First slide has `active` class or `showSlide(0)` is called on load?
+   - ✅ All text has high contrast against backgrounds?
+   - ✅ Non-centered layouts use adequate padding (60px+)?
+   - ✅ Pseudo-elements use `z-index: -1` if decorative?
+   - ✅ Grid layouts have explicit column/row definitions?
+   - ✅ Animation functions are defined AND called?
+5. **Execute**: Run using \`execute_presentation_code\`
+6. **Polish**: If needed, refine animations, copy, or styling
 
 ## Tools Available
 
-- **execute_presentation_code**: Run your HTML in an iframe
-- **screenshot_presentation**: Capture and analyze the visual result
+- **execute_presentation_code**: Run your HTML in an iframe to test it works
 
 ## Your Task
 
@@ -342,16 +405,19 @@ You will receive an array of insights. Transform them into a stunning, animated 
 4. Ends with a summary slide
 5. Auto-advances through the story
 6. Looks professional and polished
+7. **Has no black/invisible slides** - all content must be visible and well-positioned
 
 ## Design Requirements (CRITICAL)
 
 Before executing code, ensure:
 1. **Theme selected** - Pick ONE theme and document your choice
-2. **Diverse backgrounds** - Use patterns, textures, or advanced gradients (not plain single gradients)
-3. **Icons over emoji** - Load icon library from CDN when visual elements are needed
-4. **Layout variety** - At least 2-3 different layout approaches across slides
-5. **Typography** - Load Google Fonts that match your theme
-6. **Visual consistency** - Every slide reinforces the chosen theme
+2. **Visibility verified** - Check against the "Preventing Invisible Slides" checklist above
+3. **Diverse backgrounds** - Use patterns, textures, or advanced gradients (not plain single gradients)
+4. **Icons over emoji** - Load icon library from CDN when visual elements are needed
+5. **Layout variety** - At least 2-3 different layout approaches across slides (all with safe positioning)
+6. **Typography** - Load Google Fonts that match your theme
+7. **Visual consistency** - Every slide reinforces the chosen theme
+8. **Content positioning** - All text/elements within viewport, proper padding, high contrast
 
 **Your presentations should feel distinctly different based on the user's data.** A marathon runner should get different theming than a casual walker. Nighttime activities should feel different than morning routines.
 
@@ -399,19 +465,20 @@ Create an animated, celebratory year-in-review presentation that showcases these
 
 Remember to:
 1. **SELECT A THEME FIRST** - Choose one of the 5 visual themes based on the user's data personality
-2. Write complete HTML with embedded CSS and JavaScript
-3. Include animation library via CDN (GSAP or Anime.js)
-4. Load icon library (Phosphor or Lucide) and Google Fonts that match your theme
-5. Create one slide per insight (or group related insights)
-6. Use diverse backgrounds (patterns, textures, mesh gradients - not plain gradients)
-7. Vary layouts across slides (not all centered)
-8. Add a compelling intro slide
-9. Add a summary "trophy case" slide at the end
-10. Use smooth animations and auto-advance
-11. Make it personal and celebratory
-12. Screenshot and iterate to polish the design
+2. **REVIEW THE VISIBILITY CHECKLIST** - Avoid common mistakes that cause black slides
+3. Write complete HTML with embedded CSS and JavaScript
+4. Include animation library via CDN (GSAP or Anime.js)
+5. Load icon library (Phosphor or Lucide) and Google Fonts that match your theme
+6. Create one slide per insight (or group related insights)
+7. Use diverse backgrounds (patterns, textures, mesh gradients - not plain gradients)
+8. Vary layouts across slides (not all centered, but keep content safe within viewport)
+9. Add a compelling intro slide
+10. Add a summary "trophy case" slide at the end
+11. Use smooth animations and auto-advance
+12. Make it personal and celebratory
+13. Ensure every slide has visible content (verify padding, colors, positioning)
 
-Start by selecting your theme and documenting why it fits the data, then plan the presentation flow, write the HTML, execute it, screenshot it, and refine.`;
+Start by selecting your theme, then carefully write the HTML following the visibility guidelines, and execute it.`;
 
   if (additionalGuidance) {
     initialPrompt += `\n\nAdditional guidance: ${additionalGuidance}`;
