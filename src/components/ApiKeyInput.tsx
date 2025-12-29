@@ -86,7 +86,7 @@ export function ApiKeyInput({ onApiKeySet }: ApiKeyInputProps) {
       {!showApiKeyForm ? (
         <>
           <p className="privacy-note">
-            Try the app with our demo quota, or bring your own Anthropic API key for unlimited usage.
+            I put up an extremely limited budget to let people try this without their own API key. Try your luck with the demo budget, or bring-your-own API key!
           </p>
 
           <div className="button-group" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '2rem' }}>
